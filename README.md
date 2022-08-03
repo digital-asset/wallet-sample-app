@@ -1,7 +1,7 @@
 [![Daml logo](https://docs.daml.com/_static/images/DAML_Logo_Blue.svg)](https://www.daml.com)
 
 [![Download](https://img.shields.io/github/release/digital-asset/daml.svg?label=Download)](https://docs.daml.com/getting-started/installation.html)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DACH-NY/wallet-sample-app/blob/main/LICENSE)  
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/digital-asset/wallet-sample-app/blob/main/LICENSE)  
 Copyright (c) 2022 Digital Asset (Switzerland) GmbH and/or its affiliates. All Rights Reserved. SPDX-License-Identifier: Apache-2.0
 
 # Welcome to the Wallet Daml Sample App
@@ -176,7 +176,7 @@ Click the ledger, then click `upload file`
 
 ![image](damlHubScreenshots/UploadFileButton.png)
 
- to upload the dar files created in ["Build Required Files"](##-Build-Required-Files) step. These include:
+ to upload the dar files created in ["Build Required Files"](#build-required-files) step. These include:
 - asset.dar
 - account.dar
 - user.dar

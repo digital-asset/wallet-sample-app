@@ -77,7 +77,7 @@ export const SideMenuContent: React.FC<SideMenuContentProps> = (props) => {
             <LinkBtn
               sx={{ textDecoration: "none" }}
               target="_blank"
-              href="https://github.com/DACH-NY/wallet-sample-app#welcome-to-the-wallet-daml-reference-app"
+              href="https://github.com/digital-asset/wallet-sample-app#welcome-to-the-wallet-daml-sample-app"
             >
               App ReadMe
             </LinkBtn>
@@ -86,7 +86,7 @@ export const SideMenuContent: React.FC<SideMenuContentProps> = (props) => {
             <LinkBtn
               sx={{ textDecoration: "none" }}
               target="_blank"
-              href="https://github.com/DACH-NY/wallet-sample-app"
+              href="https://github.com/digital-asset/wallet-sample-app"
             >
               Github
             </LinkBtn>
@@ -95,7 +95,7 @@ export const SideMenuContent: React.FC<SideMenuContentProps> = (props) => {
             <LinkBtn
               sx={{ textDecoration: "none" }}
               target="_blank"
-              href="https://github.com/DACH-NY/wallet-sample-app/issues"
+              href="https://github.com/digital-asset/wallet-sample-app/issues"
             >
               Feature Requests
             </LinkBtn>

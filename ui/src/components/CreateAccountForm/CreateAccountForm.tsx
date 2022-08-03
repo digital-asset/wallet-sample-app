@@ -113,7 +113,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
               can issue new asset quantities into the account and more. Read{" "}
               <Link
                 target="_blank"
-                href="https://github.com/DACH-NY/wallet-sample-app/blob/main/Concepts.md#wallet-daml-reference-app---concepts-and-their-implementation"
+                href="https://github.com/digital-asset/wallet-sample-app/blob/main/Concepts.md#wallet-daml-reference-app---concepts-and-their-implementation"
               >
                 Wallet Daml Reference App - concepts and their implementation
                 article for details.

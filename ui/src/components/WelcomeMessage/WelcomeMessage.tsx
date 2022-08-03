@@ -29,7 +29,7 @@ export const WelcomeMessage: React.FC = () => {
           issuance, airdrop, transfer and atomic swaps. We assume the developer
           already has basic knowledge of Daml. You can view the full repo{" "}
           <Link
-            href="https://github.com/DACH-NY/wallet-sample-app"
+            href="https://github.com/digital-asset/wallet-sample-app"
             target="_blank"
           >
             here
