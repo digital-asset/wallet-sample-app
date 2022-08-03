@@ -1,0 +1,4 @@
+sdk-version: 2.3.0
+name: wallet-refapp
+source: daml
+init-script: Setup:setup

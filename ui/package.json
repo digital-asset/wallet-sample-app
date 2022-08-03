@@ -1,0 +1,63 @@
+{
+  "name": "wallet-refapp",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@auth0/auth0-react": "^1.9.0",
+    "@daml.js/account": "file:daml.js/Account-0.0.1",
+    "@daml.js/asset": "file:daml.js/Asset-0.0.1",
+    "@daml.js/user": "file:daml.js/User-0.0.1",
+    "@daml/hub-react": "^1.1.0",
+    "@daml/ledger": "2.3.2",
+    "@daml/react": "2.3.2",
+    "@daml/types": "2.3.2",
+    "@emotion/react": "^11.7.1",
+    "@emotion/styled": "^11.6.0",
+    "@mui/icons-material": "^5.4.1",
+    "@mui/lab": "^5.0.0-alpha.68",
+    "@mui/material": "^5.4.1",
+    "@mui/styles": "^5.4.1",
+    "dotenv": "^8.2.0",
+    "jwt-decode": "^3.1.2",
+    "jwt-simple": "^0.5.6",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-router-dom": "^6.2.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --testURL='http://localhost:7575'",
+    "eject": "react-scripts eject",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx src/",
+    "zip": "npm run-script build && zip -r ../wallet-refapp-ui.zip build"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/jwt-simple": "^0.5.33",
+    "@types/react": "17.0.0",
+    "@types/react-dom": "^16.9.4",
+    "@types/dotenv": "^8.2.0",
+    "http-proxy-middleware": "^1.0.4",
+    "react-scripts": "^4.0.3",
+    "typescript": "~3.8.3",
+    "react-error-overlay": "6.0.9"
+  },
+  "devDependenciesComments": {
+    "react-error-overlay": "Used to fix process is not defined error which causes the UI to freeze, https://stackoverflow.com/questions/70368760/react-uncaught-referenceerror-process-is-not-defined"
+  }
+}

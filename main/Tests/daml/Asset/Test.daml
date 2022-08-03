@@ -1,0 +1,71 @@
+module Asset.Test where
+import Asset
+import DA.Assert
+import DA.Set as Set
+import Daml.Script
+asset_tests : Script ()
+data TestParties = TestParties with
+  alice: Party
+  bob: Party
+  chris: Party
+  dianne: Party
+
+setupParties: Script TestParties
+setupParties = do
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  chris <- allocateParty "Chris"
+  dianne <- allocateParty "Dianne"
+  return $ TestParties with ..
+  
+asset_tests = script do
+
+  tP@TestParties{..} <- setupParties
+  let 
+    alice_tkn = AssetType with
+      issuer = alice
+      symbol = "ALC"
+      fungible = True
+      reference = None 
+
+  -- Cannot mint asset with zero amount
+  submitMustFail alice do
+    createCmd Asset with
+      assetType = alice_tkn
+      owner = alice
+      amount = 0.0
+      observers = Set.empty
+
+  -- Cannot issue asset on behalf of someone else
+  submitMustFail alice do
+    createCmd Asset with
+      assetType = alice_tkn
+      owner = bob
+      amount = 0.0
+      observers = Set.empty
+
+ -- Cannot issue asset on behalf of someone else
+  submitMustFail alice do
+    createCmd Asset with
+      assetType = alice_tkn
+      owner = bob
+      amount = -10.0
+      observers = Set.empty
+
+  (cid) <- submit alice do 
+    createCmd Asset with
+      assetType = alice_tkn
+      owner = alice
+      amount = 10.0
+      observers = Set.empty
+    
+  -- Verify contract on ledger
+  proposals <- query @Asset alice
+  assertEq [Asset {assetType = AssetType {issuer = alice, symbol = "ALC", fungible = True, reference = None}, owner = alice, amount = 10.0, observers = Set.empty}] (map snd proposals)
+
+  -- Verify privacy of Alice's asset contract
+  -- bob cannot see any contracts
+  proposals <- query @Asset bob
+  assertEq [] (map snd proposals)
+
+  pure()

@@ -1,0 +1,85 @@
+module Setup where
+
+import DA.Foldable (forA_)
+import DA.Optional
+import qualified DA.Text as T
+import Account
+import User
+import Asset
+import Daml.Script
+
+-- | A test user for the create-daml-app network.
+data TestUser = TestUser with
+  alias : Text
+  public : Party
+
+-- | Create a public party, then create three test users.
+setup : Script (ContractId AssetHoldingAccount, ContractId User.User, ContractId User.Alias)
+setup = do
+  public <- createPublic
+  let aliases = ["Alice", "Bob", "Charlie", "Ron"]
+  forA_ aliases $ \alias -> createTestUser $ TestUser alias public
+  
+  admin <- getOrCreateUser "Admin" (Some public)
+  let p = getPrimaryParty admin
+
+  assetHoldingAccount <- submit p do
+    createCmd AssetHoldingAccount with
+      assetType = AssetType with 
+        issuer = p
+        symbol = "ET"
+        fungible = True
+        reference = None
+      owner = p
+      airdroppable = True
+      resharable = True 
+  
+  user <- submit p do 
+    createCmd User.User with
+      username = p
+  
+  alias <- submit p do 
+    createCmd User.Alias with
+      username = p
+      alias = "Admin"
+      public = public
+
+  return (assetHoldingAccount, user, alias)
+
+  
+
+-- | Create a test user.
+createTestUser : TestUser -> Script Party
+createTestUser TestUser{alias, public} = do
+  u <- getOrCreateUser alias (Some public)
+  let p = getPrimaryParty u
+  pure p
+
+-- | Create the public party.
+createPublic : Script Party
+createPublic = do
+  publicUser <- getOrCreateUser "Public" None
+  pure $ getPrimaryParty publicUser
+
+
+-- | Get a user by their id. If the user doesn't exist, it is created.
+getOrCreateUser : Text -> Optional Party -> Script Daml.Script.User
+getOrCreateUser alias publicM = do
+  userId <- validateUserId $ toUserId alias
+  try
+    getUser userId
+  catch
+    UserNotFound _ -> do
+      p <- allocateParty alias
+      let u = Daml.Script.User userId (Some p)
+      createUser u $ CanActAs p :: [CanReadAs public | Some public <- [publicM]]
+      pure u
+
+-- | Convert a text to a valid user id.
+toUserId : Text -> Text
+toUserId = T.asciiToLower
+
+-- | Try to get the primary party of a user and fail if the user has no associated primary party.
+getPrimaryParty : Daml.Script.User -> Party
+getPrimaryParty u = fromSomeNote ("User " <> userIdToText u.userId <> " is missing a primary party.") u.primaryParty
+

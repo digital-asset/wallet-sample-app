@@ -1,0 +1,29 @@
+module AcceptAirdropRequestTrigger where
+
+import Account
+import qualified Daml.Trigger as T
+import DA.Foldable
+import DA.Action
+
+-- Auto accept airdrop request from other users
+-- Used to get Example Token quantities
+acceptAirdropRequestTrigger: T.Trigger ()
+acceptAirdropRequestTrigger = T.Trigger 
+ { initialize = pure (),
+  updateState = \_  -> pure (),
+  registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @AirdropRequest],
+  rule = \p -> do
+    airdrop_requests <- T.query @AirdropRequest
+    let isMe = (\requests -> requests.assetHoldingAccountIssuer == p)
+    let meList = filter (\(_, contract) -> isMe contract) airdrop_requests
+    let requests = map fst meList
+
+    debug ("requests", airdrop_requests)
+
+    
+    unless ( DA.Foldable.null requests ) do
+       mapA_ (\request ->  T.dedupExercise request AirdropRequest_Accept) requests
+      
+    debug $ "ACCEPT AIRDROP TRIGGER FIRED",
+  heartbeat = None
+}

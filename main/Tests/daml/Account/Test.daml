@@ -1,0 +1,527 @@
+module Account.Test where
+import Account
+import Asset
+
+import DA.Assert
+import DA.List
+import DA.Set as Set
+import Daml.Script
+import DA.Optional
+
+accountBalance_test: Script ()
+dupe_account_test  : Script ()
+account_reshare_test  : Script ()
+account_airdrop_test: Script ()
+transfer_test: Script ()
+transfer_privacy_test: Script ()
+dupe_account_invite_test: Script ()
+account_recipient_mismatch_test: Script ()
+trade_test: Script ()
+
+data TestParties = TestParties with
+  alice: Party
+  bob: Party
+  chris: Party
+  dianne: Party
+  issuer: Party
+  party1: Party
+  party2: Party
+
+setupParties: Script TestParties
+setupParties = do
+  let parties = ["alice"]
+  alice <- allocateParty "Alice"
+  bob <- allocateParty "Bob"
+  chris <- allocateParty "Chris"
+  dianne <- allocateParty "Dianne"
+  issuer <- allocateParty "issuer"
+  party1 <- allocateParty "party1"
+  party2 <- allocateParty "party2"
+  return $ TestParties with ..
+
+accountBalance : AssetHoldingAccount -> Script Decimal 
+accountBalance account = do
+  assets <- queryFilter @Asset account.owner
+    (\asset -> (asset.owner==account.owner) && (asset.assetType==account.assetType))
+  case assets of
+    [] -> return 0.0
+    _ -> return (sum . map (\x -> x.amount) $ (unzip assets)._2)
+
+assertBalance: Party -> ContractId AssetHoldingAccount -> Decimal -> Script ()
+assertBalance party account_cid expected = do 
+  optionalAccount <- queryContractId party account_cid
+  let account = fromSome optionalAccount
+  balance <- accountBalance account
+  balance === expected
+
+accountBalance_test = do
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    token = AssetType with
+      issuer = issuer
+      symbol = "issuer"
+      fungible = True
+      reference = None
+
+  account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = token
+      owner = issuer
+      airdroppable = False
+      resharable = True
+ 
+  asset_cid_0 <- submit issuer do
+    createCmd Asset with
+      assetType = token
+      owner = issuer
+      amount = 10.0
+      observers = Set.empty
+  
+  asset_cid_1 <- submit issuer do
+    createCmd Asset with
+      assetType = token
+      owner = issuer
+      amount = 5.0
+      observers = Set.empty
+
+  let expected:Decimal  = 15.0
+
+  assertBalance issuer account_cid expected
+
+  pure()
+
+dupe_account_test = script do
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    alice_tkn = AssetType with
+      issuer = alice
+      symbol = "ALC"
+      fungible = True
+      reference = None 
+
+  (cid) <- submit alice do 
+    createCmd Asset with
+      assetType = alice_tkn
+      owner = alice
+      amount = 50.0
+      observers = Set.empty
+  
+  aliceALCAccCid <- submit alice do
+    createCmd AssetHoldingAccount with 
+      assetType = alice_tkn
+      owner = alice
+      airdroppable = False
+      resharable = True
+  
+-- Owner cannot have more than one account for the same asset type
+  submitMustFail alice do
+    createCmd AssetHoldingAccount with 
+      assetType = alice_tkn
+      owner = alice
+      airdroppable = True
+      resharable = True 
+    
+  -- Verify contract on ledger
+
+  -- Verify privacy of Alice's AssetHoldingAccount contract
+  proposals <- query @AssetHoldingAccount bob
+  assertEq [] (map snd proposals)
+
+  pure()
+
+account_reshare_test = script do
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    issuer_token = AssetType with
+      issuer = issuer
+      symbol = "ISSUER"
+      fungible = True
+      reference = None
+  
+  let 
+    non_shareable_issuer_token = AssetType with
+      issuer = issuer
+      symbol = "NON-SHAREABLE-ISSUER"
+      fungible = True
+      reference = None
+  
+-- Non resharable test
+  non_resharable_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = non_shareable_issuer_token
+      owner = issuer
+      airdroppable = False
+      resharable = False 
+  
+  -- Issuer can share with Party1
+  account_proposal_party1_cid <- submit issuer do
+    exerciseByKeyCmd @AssetHoldingAccount (non_shareable_issuer_token, issuer) Invite_New_Asset_Holder with
+      recipient = party1
+    
+  party1_assetHoldingAccount_cid <- submit party1 do
+    exerciseCmd account_proposal_party1_cid AssetHoldingAccountProposal_Accept
+  
+  -- Account cannot be further reshared by Part1 to Party2
+  submitMustFail party1 do 
+    exerciseCmd party1_assetHoldingAccount_cid Invite_New_Asset_Holder with 
+      recipient = party2
+  
+-- Sharable Test
+  resharable_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = issuer_token
+      owner = issuer
+      airdroppable = False
+      resharable = True 
+
+  -- Issuer can share party1
+  party1_shareable_account_proposal_cid <- submit issuer do
+    exerciseCmd resharable_account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  
+  party1_shareable_assetHoldingAccount_cid <- submit party1 do
+    exerciseCmd party1_shareable_account_proposal_cid AssetHoldingAccountProposal_Accept
+    
+  -- Account CAN be further reshared by Party1 to Party2
+  party2_shareable_account_proposal_cid <- submit party1 do 
+    exerciseCmd party1_shareable_assetHoldingAccount_cid Invite_New_Asset_Holder with  
+      recipient = party2
+  pure()
+
+account_airdrop_test = script do
+
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    airdroppable_token = AssetType with
+      issuer = issuer
+      symbol = "airdroppable_token"
+      fungible = True
+      reference = None
+
+  let 
+    non_airdroppable_token = AssetType with
+      issuer = issuer
+      symbol = "non_airdroppable_token"
+      fungible = True
+      reference = None
+
+  -- Airdroppable test
+  airdroppable_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = airdroppable_token
+      owner = issuer
+      airdroppable = True
+      resharable = False 
+
+  -- Setup, Issuer must invite Party1
+  airdroppable_account_proposal_party1_cid <- submit issuer do
+    exerciseCmd airdroppable_account_cid Invite_New_Asset_Holder with
+      recipient = party1
+
+  -- Party1 must be invited as an owner
+  party1_airdroppable_assetHoldingAccount_cid <- submit party1 do
+    exerciseCmd airdroppable_account_proposal_party1_cid AssetHoldingAccountProposal_Accept
+
+  -- Issuer can airdrop amounts to party1
+  party1_asset_cid <- submit issuer do 
+    exerciseCmd party1_airdroppable_assetHoldingAccount_cid Airdrop with
+      amount = 10.0
+
+-- Non Airdroppable test
+  non_airdroppable_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = non_airdroppable_token
+      owner = issuer
+      airdroppable = False
+      resharable = False 
+
+  -- Setup, Issuer must invite Party1
+  non_airdroppable_account_proposal_party1_cid <- submit issuer do
+    exerciseCmd non_airdroppable_account_cid Invite_New_Asset_Holder with
+      recipient = party1
+
+  -- Party1 must be invited as an owner
+  party1_airdroppable_assetHoldingAccount_cid <- submit party1 do
+    exerciseCmd non_airdroppable_account_proposal_party1_cid AssetHoldingAccountProposal_Accept
+
+  -- Issuer cannot airdrop tokens
+  submitMustFail issuer do 
+    exerciseCmd party1_airdroppable_assetHoldingAccount_cid Airdrop with
+      amount = 10.0
+
+  pure()
+
+transfer_test = script do
+
+-- SETUP START
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    transfer_token = AssetType with
+      issuer = issuer
+      symbol = "transfer_token"
+      fungible = True
+      reference = None
+
+  issuer_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = transfer_token
+      owner = issuer
+      airdroppable = True
+      resharable = False 
+
+  asset_cid <- submit issuer do
+    createCmd Asset with
+      assetType = transfer_token
+      owner = issuer
+      amount = 10.0
+      observers = Set.empty
+  
+  -- Issuer must invite Party1
+  party1_account_proposal_cid <- submit issuer do
+    exerciseCmd issuer_account_cid Invite_New_Asset_Holder with
+      recipient = party1
+
+  -- Party1 must accept
+  party1_assetHoldingAccount_cid <- submit party1 do
+    exerciseCmd party1_account_proposal_cid AssetHoldingAccountProposal_Accept
+-- SETUP END
+
+-- Test ownership transfer
+  submit issuer do 
+    exerciseCmd issuer_account_cid Create_Transfers with
+      assetCids = [asset_cid]
+      transfers = [(4.0, party1)]
+  
+  party1Transfers <- queryFilter @AssetTransfer party1 (\tx -> tx.recipient==party1)
+  let party1TransferCid = (head party1Transfers)._1
+
+  -- Cannot accept via Accept_transfer
+    -- Asset issuer or owner cannot accept transfer by calling Accept_Transfer choice on Asset contract
+  submitMustFail party1 do
+    exerciseCmd party1TransferCid Accept_Transfer
+
+  -- Ownership transfer via Deposit_Transfer_Into_Account
+  party1_asset_cids <- submit party1 do
+    exerciseCmd party1_assetHoldingAccount_cid Deposit_Transfer_Into_Account with 
+      transferCid = party1TransferCid
+
+  -- Assert balance
+  optionalAccount <- queryContractId issuer issuer_account_cid
+  let account = fromSome optionalAccount
+  balance <- accountBalance account
+  debug balance
+  balance === 6.0
+
+-- Test negative transfer
+  submitMustFail issuer do 
+    exerciseCmd issuer_account_cid Create_Transfers with
+      assetCids = [asset_cid]
+      transfers = [(-1.0, party1)]
+
+  pure()
+
+transfer_privacy_test = do 
+  pure()
+
+dupe_account_invite_test = do
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    token = AssetType with
+      issuer = issuer
+      symbol = "issuer"
+      fungible = True
+      reference = None 
+
+  account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = token
+      owner = issuer
+      airdroppable = False
+      resharable = False 
+
+  -- first invitation
+  party1_account_proposal_cid_1 <- submit issuer do
+    exerciseCmd account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  
+  -- dupe invitation
+  party1_account_proposal_cid_2 <- submit issuer do
+    exerciseCmd account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  -- party1 can accept first
+  party1_account_cid <- submit party1 do
+    exerciseCmd party1_account_proposal_cid_1 AssetHoldingAccountProposal_Accept
+  -- party1 fails to accept second
+  submitMustFail party1 do
+      exerciseCmd party1_account_proposal_cid_2 AssetHoldingAccountProposal_Accept
+
+  pure()
+
+account_recipient_mismatch_test = do
+  testParties@TestParties{..} <- setupParties
+
+  let 
+    token = AssetType with
+      issuer = issuer
+      symbol = "issuer"
+      fungible = True
+      reference = None 
+
+  account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = token
+      owner = issuer
+      airdroppable = False
+      resharable = False 
+  
+  party1_account_proposal_cid_1 <- submit issuer do
+    exerciseCmd account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  
+  party1_account_proposal_cid_1 <- submit issuer do
+    exerciseCmd account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  
+  asset_cid <- submit issuer do
+    createCmd Asset with
+      assetType = token
+      owner = issuer
+      amount = 10.0
+      observers = Set.empty
+
+  submit issuer do 
+    exerciseCmd account_cid Create_Transfers with
+      assetCids = [asset_cid]
+      transfers = [(1.0, party1)]
+
+  -- Get transfers
+  party1Transfers <- queryFilter @AssetTransfer party1 (\tx -> tx.recipient==party1)
+  let party1TransferCid = (head party1Transfers)._1
+
+  -- recipient of transfer must be owner of account
+  submitMustFail issuer do
+    exerciseCmd account_cid Deposit_Transfer_Into_Account with transferCid = party1TransferCid
+    
+  pure()
+
+trade_test = do
+  testParties@TestParties{..} <- setupParties
+
+-- Account creation and asset issuance start
+  let 
+    rare_token = AssetType with
+      issuer = issuer
+      symbol = "rare"
+      fungible = True
+      reference = None
+  let 
+    common_token = AssetType with
+      issuer = party1
+      symbol = "common"
+      fungible = True
+      reference = None
+  
+  -- Account creation start
+  issuer_rare_account_cid <- submit issuer do
+    createCmd AssetHoldingAccount with 
+      assetType = rare_token
+      owner = issuer
+      airdroppable = False
+      resharable = False
+  
+  party1_common_account_cid <- submit party1 do
+    createCmd AssetHoldingAccount with 
+      assetType = common_token
+      owner = party1
+      airdroppable = False
+      resharable = False
+  -- Account creation end
+
+  -- Asset issuance start
+  issuer_rare_token_asset_cid_1 <- submit issuer do
+    createCmd Asset with
+      assetType = rare_token
+      owner = issuer
+      amount = 1.0
+      observers = Set.empty
+  
+  issuer_rare_token_asset_cid_2 <- submit issuer do
+    createCmd Asset with
+      assetType = rare_token
+      owner = issuer
+      amount = 4.0
+      observers = Set.empty
+
+  party1_common_asset_cid_1 <- submit party1 do
+    createCmd Asset with
+      assetType = common_token
+      owner = party1
+      amount = 10.0
+      observers = Set.empty
+      
+  party1_common_asset_cid_2 <- submit party1 do
+    createCmd Asset with
+      assetType = common_token
+      owner = party1
+      amount = 10.0
+      observers = Set.empty
+
+  -- Asset issuance end
+-- End of Account creation and asset issuance
+
+-- Start of invitations to accounts
+  party1_rare_account_proposal_cid <- submit issuer do
+    exerciseCmd issuer_rare_account_cid Invite_New_Asset_Holder with
+      recipient = party1
+  
+  issuer_common_account_proposal_cid <- submit party1 do
+    exerciseCmd party1_common_account_cid Invite_New_Asset_Holder with
+      recipient = issuer
+
+  party1_rare_account_cid <- submit party1 do
+    exerciseCmd party1_rare_account_proposal_cid AssetHoldingAccountProposal_Accept
+
+  issuer_common_account_cid <- submit issuer do
+    exerciseCmd issuer_common_account_proposal_cid AssetHoldingAccountProposal_Accept
+-- End of invitations
+
+ -- Balance before swap
+  assertBalance issuer issuer_rare_account_cid 5.0
+  assertBalance issuer issuer_common_account_cid 0.0
+
+  assertBalance party1 party1_common_account_cid 20.0
+  assertBalance party1 party1_rare_account_cid 0.0
+
+-- Start of swap
+  -- Issuer proposes swap to party1
+  submit issuer do
+    exerciseCmd issuer_rare_account_cid Create_Trade with
+      assetCids = [issuer_rare_token_asset_cid_1, issuer_rare_token_asset_cid_2]
+      offeredAssetAmount = 3.0
+      requestedAsset = Asset with
+        assetType = common_token
+        owner = party1
+        amount = 13.0
+        observers = Set.empty
+
+  party1IncomingTrades <- queryFilter @Account.Trade party1 (\trade -> trade.receiver==party1)
+  let (tradeCid, trade) = head party1IncomingTrades
+
+  submit party1 do
+    exerciseCmd tradeCid Trade_Settle with
+      requestedAssetCids = [party1_common_asset_cid_1, party1_common_asset_cid_2]
+
+ -- Balance after swap
+  assertBalance issuer issuer_rare_account_cid 2.0
+  assertBalance issuer issuer_common_account_cid 13.0
+
+  assertBalance party1 party1_common_account_cid 7.0
+  assertBalance party1 party1_rare_account_cid 3.0
+
+  pure()

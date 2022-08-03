@@ -1,0 +1,38 @@
+module AcceptAssetInviteTrigger where
+
+import Account
+import qualified Daml.Trigger as T
+import DA.Foldable
+import DA.Action
+import DA.Optional (isSome)
+
+-- Auto accept assset invitation
+acceptAssetInviteTrigger: T.Trigger ()
+acceptAssetInviteTrigger = T.Trigger 
+ { initialize = pure (),
+  updateState = \_  -> pure (),
+  registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @AssetHoldingAccountProposal, T.registeredTemplate @AssetHoldingAccount],
+  rule = \p -> do
+    requests <- T.query @AssetHoldingAccountProposal
+    let isMe = (\requests -> requests.recipient == p)
+    let meList = filter (\(_, contract) -> isMe contract) requests
+    let requests =  meList
+
+    debug ("asset holding account invites", requests)
+
+    
+    unless ( DA.Foldable.null requests ) do
+      case requests of 
+        [] -> pure()
+        (requestCid, c) :: _ -> do
+          optAccount <- T.queryContractKey @AssetHoldingAccount (c.account.assetType, p)
+          if isSome(optAccount) 
+            then do 
+              -- Reject proposal if there is existing Asset Holding Account
+              T.dedupExercise requestCid AssetHoldingAccountProposal_Reject
+          else do 
+            T.dedupExercise requestCid AssetHoldingAccountProposal_Accept
+      
+    debug $ "ACCEPT ASSET INVITE TRIGGER",
+  heartbeat = None
+}

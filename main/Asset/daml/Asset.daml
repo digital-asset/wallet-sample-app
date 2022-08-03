@@ -1,0 +1,80 @@
+-- Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+-- A simple asset with issuer and owner.
+-- This module is intended to be used in conjunction with Account module, which implements the account for holding assets
+-- An Asset contract can be created without corresponding AssetHoldingAccount contract, however all manipulation
+-- of the asset (transfer etc.) can only be done through corresponding account
+
+module Asset where
+
+import DA.Set as Set
+
+-- Asset type is identified by a combination of issuer, symbol, fungible and reference properties.
+-- Optional reference field can be used for purposes like
+-- identifying a specific item in a run of non-fungible tokens.
+data AssetType = AssetType with
+    -- The issuer of the asset.
+    issuer: Party
+    -- A symbol for the asset. Uniquely identifies the type of asset amongst
+    -- those issued by the issuer
+    symbol: Text
+    -- Is the asset fungible, i.e. can it be split and merged
+    fungible : Bool
+    -- A possible reference for NFTs and the like
+    reference : Optional Text     
+  deriving (Eq, Show)
+  
+-- The Asset template represents an asset holding.
+-- An Asset is co-signed by the issuer and the owner.
+-- Thus, an Asset is a contract between issuer and owner and can 
+-- represent assets as well as liabilities.
+template Asset with
+    assetType : AssetType
+    -- The asset owner
+    owner : Party
+    -- The amount of the asset
+    amount : Decimal
+    observers : Set Party
+  where
+    signatory assetType.issuer, owner
+    observer observers
+    ensure (if assetType.fungible then amount>0.0 else (amount==1.0))
+
+-- The AssetTransfer template represents an asset in transfer. When a transfer is created, the asset contract,
+-- which is the source of funds for the transfer, is archived, so it cannot be used to create other transfers.
+-- AssetTransfer contract cannot be created by asset owner using "create" command because this requires the
+-- authority of the issuer. AssetTransfer can only be created by exercising Create_Transfers choice on
+-- AssetHoldingAccount template, which provides the authority of both asset issuer and asset owner.
+-- The template provides transfer originator with a choice to cancel the transfer.
+-- It also provides the recipient with a choice to accept or reject the transfer.
+template AssetTransfer
+  with
+    -- The asset to be transferred.
+    asset : Asset
+    -- The recepient of the transfer.
+    recipient : Party
+  where
+    signatory (signatory asset)
+    observer recipient
+    ensure (if asset.assetType.fungible then asset.amount>0.0 else (asset.amount==1.0))
+
+    choice Cancel_Transfer : ContractId Asset
+      controller asset.owner 
+      do
+        create asset
+
+    choice Reject_Transfer : ContractId Asset
+      controller recipient
+      do
+        create asset
+
+    choice Accept_Transfer : ContractId Asset
+      -- Requiring the authority of both the recipient and the asset issuer ensures that transfer can only be accepted
+      -- by calling Deposit_Transfer_Into_Account choice on the AssetHoldingAccount template,
+      -- which in turn ensures one cannot accept asset transfer without having asset holding account
+      controller recipient, asset.assetType.issuer
+      do
+        create asset with
+          owner = recipient
+          observers = Set.empty

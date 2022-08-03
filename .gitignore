@@ -1,0 +1,17 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+*.dar
+main/Account/.daml
+main/Asset/.daml
+main/User/.daml
+main/Tests/.daml
+triggers/.daml
+build
+node_modules
+*.zip
+*.log
+ui/daml.js
+.DS_Store
+canton-sandbox-port.txt
+json-api-port.txt
+log

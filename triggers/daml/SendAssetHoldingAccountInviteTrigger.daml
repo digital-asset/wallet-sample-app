@@ -1,0 +1,34 @@
+module SendAssetHoldingAccountInviteTrigger where
+
+import Account
+import qualified Daml.Trigger as T
+import DA.Foldable
+import DA.Action
+
+sendAssetHoldingAccountInviteTrigger: T.Trigger ()
+sendAssetHoldingAccountInviteTrigger = T.Trigger 
+ { initialize = pure (),
+  updateState = \_  -> pure (),
+  registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @AssetHoldingAccountRequest, T.registeredTemplate @AssetHoldingAccount],
+  rule = \p -> do
+    asset_holding_account_requests <- T.query @AssetHoldingAccountRequest
+    let isNotMe = (\requests -> requests.recipient /= p)
+    let notMeList = filter (\(_, contract) -> isNotMe contract) asset_holding_account_requests
+    let requests = map fst notMeList
+    debug ("requests",requests)
+    assetAccounts <- T.query @AssetHoldingAccount
+    debug ("assetAccounts", assetAccounts)
+    let isET = (\account -> account.assetType.symbol == "ET" && account.assetType.issuer == p && account.owner == p)
+    let etAccounts = filter (\(_, contract) -> isET contract) assetAccounts
+    let cids = map fst etAccounts
+    debug ("etAccounts", cids)
+
+    
+    unless ( DA.Foldable.null requests && DA.Foldable.null cids ) do
+      case etAccounts of 
+        [] -> pure ()
+        (cid, c) :: _ -> mapA_(\request -> T.dedupExercise request AssetHoldingAccountRequest_Accept with assetHoldingAccountCid = cid)  requests
+      
+    debug $ "TRIGGERED",
+  heartbeat = None
+}
