@@ -26,7 +26,7 @@ runSandbox(){
 
 startJsonApiServer(){
   echo "Starting Json api server"
-  make -s server
+  daml json-api --config json-api-app.conf
 }
 
 waitForSandBox(){
