@@ -176,7 +176,7 @@ Click the ledger, then click `upload file`
 
 ![image](damlHubScreenshots/UploadFileButton.png)
 
- to upload the dar files created in ["Build Required Files"](##-Build-Required-Files) step. These include:
+ to upload the dar files created in ["Build Required Files"](#build-required-files) step. These include:
 - asset.dar
 - account.dar
 - user.dar
