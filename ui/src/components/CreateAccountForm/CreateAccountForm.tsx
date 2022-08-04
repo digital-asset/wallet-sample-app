@@ -61,10 +61,10 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
   const [isAirdroppable, setIsAirdroppable] = React.useState<boolean>(true);
 
   const onTextChange = (event: React.BaseSyntheticEvent) => {
-    setTicker(event.target.value);
+    setTicker(event.target.value.replace(/[^\w\s]/gi, "") );
   };
   const onRefChange = (event: React.BaseSyntheticEvent) => {
-    setReference(event.target.value);
+    setReference(event.target.value.replace(/[^\w\s]/gi, "") );
   };
 
   const submit = async () => {
@@ -144,6 +144,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
               variant="outlined"
               size="small"
               error={hasError}
+              value={symbol}
               onChange={(e) => onTextChange(e)}
               sx={{ marginBottom: 1 }}
             />
@@ -162,6 +163,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
               fullWidth
               maxRows={4}
               multiline
+              value={reference}
               variant="outlined"
               size="small"
               error={hasError}
@@ -257,3 +259,5 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     </div>
   );
 };
+
+
