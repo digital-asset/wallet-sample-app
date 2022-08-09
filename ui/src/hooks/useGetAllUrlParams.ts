@@ -1,4 +1,4 @@
-import { useLocation,  } from 'react-router-dom'
+import { useLocation, useParams,  } from 'react-router-dom'
 
 export const useGetUrlParams = () => {
   const { search } = useLocation();
@@ -8,7 +8,7 @@ export const useGetUrlParams = () => {
     if(value === 'undefined'){
       value = undefined
     }
-    if(value === 'null' && key === 'reference'){
+    if(value === 'null'){
       value = null
     }
     if(value === 'true'){
