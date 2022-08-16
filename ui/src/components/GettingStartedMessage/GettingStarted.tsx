@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Card, CardContent, Typography } from "@mui/material";
+import { Card, CardContent, Typography, Link as LinkBtn } from "@mui/material";
 export const GettingStartedMessage: React.FC = () => {
   return (
     <>
@@ -10,7 +10,14 @@ export const GettingStartedMessage: React.FC = () => {
             Getting Started
           </Typography>
           <Typography>
-            This guide will walk you through the following:
+          
+            If you haven't watched this <LinkBtn
+              sx={{ textDecoration: "none" }}
+              target="_blank"
+              href="https://myinteractive.video/w/fgbRdGusDeoo"
+            >
+              walkthrough video
+            </LinkBtn> yet, first watch it to get a feel for what this app will show you. Then dive into the guide below. This guide will walk you through the following:
           </Typography>
           <br />
           <Typography>

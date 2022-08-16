@@ -14,6 +14,10 @@ import { Theme } from "@mui/material/styles";
 import { makeStyles } from "@mui/styles";
 import { isDesktop } from "../platform/platform";
 
+export const openInNewTab = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
 type Props = {
   onLogin: (credentials: Credentials) => void;
 };
@@ -145,6 +149,9 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
         <Button fullWidth variant="contained" onClick={handleLogin}>
           Log in to wallet
         </Button>
+        <Button  onClick={() => openInNewTab('https://myinteractive.video/w/fgbRdGusDeoo')} sx={{ mt: 2 }} variant="outlined" size="small">
+          Watch Walkthrough Video
+        </Button>
         {/* FORM_END */}
       </>
     );
@@ -152,39 +159,39 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
   const DamlHubLogin: React.FC = () =>
     wrap(
       <>
-      <DamlHubLoginBtn
-        withButton
-        withToken={useToken}
-        onLogin={(creds) => {
-          if (creds) {
-            login({
-              party: creds.party,
-              user: { userId: creds.partyName, primaryParty: creds.party },
-              token: creds.token,
-              getPublicParty: () => ({
-                usePublicParty: () => usePublicParty(),
-                setup: () => {},
-              }),
-            });
-          }
-        }}
-        options={{
-          method: {
-            button: {
-              text: "Log Into Wallet",
-              render: () => (
-                <Button
-                  sx={{ margin: 1 }}
-                  variant="contained"
-                  // fullWidth={true}
-                  size={isDesktop() ? "small" : "large"}
-                ></Button>
-              ),
+        <DamlHubLoginBtn
+          withButton
+          withToken={useToken}
+          onLogin={(creds) => {
+            if (creds) {
+              login({
+                party: creds.party,
+                user: { userId: creds.partyName, primaryParty: creds.party },
+                token: creds.token,
+                getPublicParty: () => ({
+                  usePublicParty: () => usePublicParty(),
+                  setup: () => {},
+                }),
+              });
+            }
+          }}
+          options={{
+            method: {
+              button: {
+                text: "Log Into Wallet",
+                render: () => (
+                  <Button
+                    sx={{ margin: 1 }}
+                    variant="contained"
+                    // fullWidth={true}
+                    size={isDesktop() ? "small" : "large"}
+                  ></Button>
+                ),
+              },
             },
-          },
-        }}
-      />
-      {isDesktop() && (
+          }}
+        />
+        {isDesktop() && (
           <Button
             fullWidth
             sx={{ mt: 1 }}
@@ -194,7 +201,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
             {useToken ? "Hide" : "Login with Token"}
           </Button>
         )}
-        </>
+        <Button  onClick={() => openInNewTab('https://myinteractive.video/w/fgbRdGusDeoo')} sx={{ mt: 2 }} variant="outlined" size="small">
+          Watch Walkthrough Video
+        </Button>
+      </>
     );
 
   return authConfig.provider === "none" ? (
