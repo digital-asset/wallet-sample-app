@@ -13,8 +13,10 @@ import {
   ListItemButton,
   Typography,
   Link as LinkBtn,
+  Button,
 } from "@mui/material";
 import { menuItems } from "../../configs/sideMenu.config";
+import { openInNewTab } from "../../pages/LoginPage";
 
 const drawerWidth: number = 200;
 
@@ -73,6 +75,9 @@ export const SideMenu: React.FC<SideMenuProps> = (props) => {
               <ListItemText className={classes.root}>{item.label}</ListItemText>
             </ListItemButton>
           ))}
+          <ListItemButton onClick={() => openInNewTab('https://myinteractive.video/w/fgbRdGusDeoo')}>
+            Walkthrough video
+          </ListItemButton>
         </List>
       </Box>
       <Box marginTop={"auto"} marginBottom={3}>
