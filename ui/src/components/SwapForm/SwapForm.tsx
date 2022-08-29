@@ -319,7 +319,7 @@ export const SwapForm: React.FC<SwapFormProps> = (props) => {
             To execute a swap both parties need to have Asset Holding Accounts
             for both assets being swapped. For detailed description of a swap
             workflow, read{" "}
-            <Link target="_blank" href="https://github.com/maxhsu-da/wallet-refapp/blob/main/AtomicSwap.md">
+            <Link target="_blank" href="https://github.com/digital-asset/wallet-sample-app/blob/main/AtomicSwap.md">
               Atomic Swap Implementation{" "}
             </Link>
           </Typography>
