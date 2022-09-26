@@ -10,6 +10,9 @@ export const menuItems: MenuItem[] = [
   { label: 'Pending Activities', path: '/pending' }, 
   {
     label: 'Create', path: '/create'
+  },
+  {
+    label: "Transaction History", path:'/transactions'
   }
 ]
 

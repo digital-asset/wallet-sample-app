@@ -70,7 +70,7 @@ template AssetHoldingAccount with
 
     -- A choice for issuer to aidrop the Asset into owner's account.
     -- This choice can also be used by the issuer to mint asset into own account.
-    nonconsuming choice Airdrop : ContractId Asset
+    nonconsuming choice Airdrop : (ContractId Asset, ContractId Transfer)
       with
         amount : Decimal
       controller assetType.issuer 
@@ -79,12 +79,21 @@ template AssetHoldingAccount with
           airdroppable || assetType.issuer==owner
         assertMsg "Cannot create airdrop. The amount of non fungible asset must be 1.0" $ 
           assetType.fungible || amount==1.0
-        create Asset with
+        currentTime <- getTime 
+        createAsset <- create Asset with
           assetType
           owner
           amount
           observers = Set.empty
-
+        createTransfer <- create Transfer with
+          quantity=amount
+          from = assetType.issuer
+          to = owner
+          transferType= "Airdrop"
+          asset=assetType
+          issuer=assetType.issuer
+          time=currentTime
+        return(createAsset,createTransfer)
     -- This choice consolidates the input set of assets in the account and from the total amount
     -- creates new set of Asset contracts in the desired input amounts plus one more Asset with the remaining amount
     -- The purpose is to create Asset contracts in desired denomination from the list of assets in the account
@@ -159,9 +168,10 @@ template AssetHoldingAccount with
 
     -- The purpose of this choice is to obtain issuer's authority required to accept the transfer.
     -- This construct ensures that transfers cannot be made to a party without an AssetHoldingAccount corresponding to the asset
-    nonconsuming choice Deposit_Transfer_Into_Account : ContractId Asset
+    nonconsuming choice Deposit_Transfer_Into_Account : (ContractId Asset, ContractId Transfer)
       with
         transferCid : ContractId AssetTransfer
+        
       controller owner 
       do
         transfer <- fetch transferCid
@@ -231,6 +241,9 @@ template AssetHoldingAccount with
         create AssetHoldingAccountCloseProposal with 
           account = this
 
+
+
+
 template AssetHoldingAccountProposal with
     account : AssetHoldingAccount
     recipient : Party
@@ -248,6 +261,12 @@ template AssetHoldingAccountProposal with
       controller recipient 
       do
         return ()
+
+
+
+
+
+
 
 template AssetHoldingAccountCloseProposal with
     account : AssetHoldingAccount
@@ -279,6 +298,10 @@ template AssetHoldingAccountCloseProposal with
       do
         return ()
 
+
+
+
+
 -- The Trade templates represents a proposal for a swap of two assets between two parties: the proposer and the receiver
 template Trade
   with
@@ -302,10 +325,9 @@ template Trade
         exercise offeredAssetCid Reject_Swap
         return ()
 
-    choice Trade_Settle : (ContractId Asset, ContractId Asset)
+    choice Trade_Settle : ((ContractId Asset,ContractId Transfer), (ContractId Asset, ContractId Transfer))
       with
         requestedAssetCids: [ContractId Asset]
-
       controller receiver
       do
         -- Receiver pre-approves the transfer of asset offered by proposer from proposer to receiver
@@ -331,6 +353,11 @@ template Trade
         return (newProposerAsset, newReceiverAsset)
 
 
+
+
+
+
+
 -- TransferPreApproal template gives the transfer originator the authority to change the asset owner
 -- from the transfer originator party to the transfer recipient party
 template TransferPreApproval
@@ -351,7 +378,7 @@ template TransferPreApproval
       do
         return ()
 
-    choice TransferPreApproval_TransferAsset : ContractId Asset
+    choice TransferPreApproval_TransferAsset : (ContractId Asset, ContractId Transfer)
       with
         txAssetCid : ContractId Asset
       controller asset.owner, newOwner
@@ -360,11 +387,20 @@ template TransferPreApproval
         assertMsg "Transfer pre-approval asset and transfer asset do not match" $
           asset == txAsset with observers = asset.observers
         archive txAssetCid
-        create asset with
+        currentTime <- getTime
+        createAsset <- create asset with
           owner = newOwner
           observers = Set.empty
-
-    choice TransferPreApproval_TransferAssetInSwap : ContractId Asset
+        createTransfer <- create Transfer with
+          quantity=asset.amount
+          from = asset.owner
+          to = newOwner
+          transferType= "Send"
+          asset=asset.assetType
+          issuer=asset.assetType.issuer
+          time=currentTime
+        return(createAsset,createTransfer)
+    choice TransferPreApproval_TransferAssetInSwap : (ContractId Asset, ContractId Transfer)
       with
         assetInSwapCid : ContractId AssetInSwap
       controller asset.owner, newOwner
@@ -373,10 +409,19 @@ template TransferPreApproval
         assertMsg "Transfer pre-approval asset and transfer asset do not match" $
           asset == assetInSwap.asset with observers = asset.observers
         archive assetInSwapCid
-        create asset with
+        currentTime <- getTime
+        createAsset <- create asset with
           owner = newOwner
           observers = Set.empty
-
+        createTransfer <- create Transfer with
+          quantity=asset.amount
+          from = asset.owner
+          to = newOwner
+          transferType= "Send"
+          asset=asset.assetType
+          issuer=asset.assetType.issuer
+          time=currentTime
+        return(createAsset,createTransfer)
 -- The AssetInSwap template represents an asset reserved for a swap.
 -- When a trade proposal is created, the asset contract, which is the source of funds for the swap, 
 -- is archived, so it cannot be used to create other swaps.
@@ -385,6 +430,12 @@ template TransferPreApproval
 -- AssetHoldingAccount template, which provides the authority of both asset issuer and asset owner.
 -- The template provides trade proposer with a choice to cancel the swap.
 -- It also provides the receiver with a choice to accept or reject the trade.
+
+
+
+
+
+
 template AssetInSwap
   with
     -- The asset to be swapped.
@@ -415,6 +466,11 @@ template AssetInSwap
 -- This functionality is distinct from the regular Propose/Accept workflow for creating AssetHoldingAccount and for airdrop.
 -- The automation of creating AssetHoldingAccountProposal and the acceptance of airdrop request for ET is implemented
 -- using Triggers and two templates (AssetHoldingAccountRequest and AirdropRequest) designed for this specific purpose.
+
+
+
+
+
 template AssetHoldingAccountRequest with
     recipient: Party
     owner: Party
@@ -428,6 +484,12 @@ template AssetHoldingAccountRequest with
          exercise assetHoldingAccountCid Invite_New_Asset_Holder with 
           recipient = recipient
 
+
+
+
+
+          
+
 template AirdropRequest with
     amount: Decimal
     requester: Party
@@ -436,8 +498,9 @@ template AirdropRequest with
   where
     signatory requester
     observer assetHoldingAccountIssuer
-    choice AirdropRequest_Accept: ContractId Asset    
+    choice AirdropRequest_Accept:(ContractId Asset, ContractId Transfer)  
       controller assetHoldingAccountIssuer
       do
         exercise assetHoldingAccountCid Airdrop with
           amount = amount
+

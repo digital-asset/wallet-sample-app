@@ -80,6 +80,7 @@ export const AssetAccountRow: React.FC<AssetAccountRowProps> = React.memo(({
   const airdropRequestPath = `/airdrop-request${paramsString}`;
   const assetInvitePath = `/invite${paramsString}`;
   const issueAirdropPath = `/issue${paramsString}`;
+  const transactionPath= `/transactionstoken${paramsString}`;
   const assetSum = getAssetSum(contracts);
   const formattedSum = numberWithCommas(assetSum);
   return (
@@ -163,6 +164,18 @@ export const AssetAccountRow: React.FC<AssetAccountRowProps> = React.memo(({
                   size="small"
                 >
                   Invite
+                </Button>
+              )}
+              {!isMobile() && (
+                <Button
+                  className={classes.buttonText}
+                  sx={{ marginRight: 1 }}
+                  variant="outlined"
+                  component={Link}
+                  to={transactionPath}
+                  size="small"
+                >
+                  Transactions
                 </Button>
               )}
             </Box>

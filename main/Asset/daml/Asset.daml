@@ -54,6 +54,7 @@ template AssetTransfer
     asset : Asset
     -- The recepient of the transfer.
     recipient : Party
+    
   where
     signatory (signatory asset)
     observer recipient
@@ -69,12 +70,41 @@ template AssetTransfer
       do
         create asset
 
-    choice Accept_Transfer : ContractId Asset
+    choice Accept_Transfer : (ContractId Asset, ContractId Transfer)
       -- Requiring the authority of both the recipient and the asset issuer ensures that transfer can only be accepted
       -- by calling Deposit_Transfer_Into_Account choice on the AssetHoldingAccount template,
       -- which in turn ensures one cannot accept asset transfer without having asset holding account
       controller recipient, asset.assetType.issuer
       do
-        create asset with
+        currentTime <-getTime
+        createAsset<- create asset with
           owner = recipient
           observers = Set.empty
+        createTransfer <- create Transfer with
+          quantity=asset.amount
+          from=asset.owner
+          to = recipient
+          transferType= "Send"
+          asset=asset.assetType
+          issuer=asset.assetType.issuer
+          time=currentTime
+        return(createAsset,createTransfer)
+        
+template Transfer with
+
+    issuer:Party
+    quantity:Decimal
+    --transfer from 
+    from: Party
+    --transfer to
+    to: Party
+    transferType: Text
+    asset:AssetType
+    time : Time
+  where
+      signatory issuer,to
+
+      observer to, from
+
+
+  

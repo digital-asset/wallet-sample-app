@@ -14,6 +14,8 @@ import { PendingSendDetailsPage } from "./PendingSendDetailsPage";
 import { PendingSwapDetailsPage } from "./PendingSwapDetailsPage";
 import { SendPage } from "./SendPage";
 import { SwapPage } from "./SwapPage";
+import {Transactions} from "./Transactions"
+import { TransactionsSpecific } from "./TransactionsSpecific";
 
 interface PagesProps {
   getPublicParty: () => PublicParty;
@@ -27,6 +29,8 @@ export const Pages: React.FC<PagesProps> = React.memo((props) => {
     <Routes>
       <Route path="/asset" element={<AssetProfilePage />} />
       <Route path="/pending/" element={<PendingActivitiesPage />} />
+      <Route path="/transactions/" element={<Transactions />} />
+      <Route path="/transactionstoken/" element={<TransactionsSpecific />} />
       <Route path="/pending-transfer" element={<PendingSendDetailsPage />} />
       <Route path="/pending-swap" element={<PendingSwapDetailsPage />} />
       <Route
