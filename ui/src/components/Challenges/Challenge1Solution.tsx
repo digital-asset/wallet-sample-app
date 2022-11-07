@@ -15,10 +15,12 @@ const Todo: React.FC<TodoProps> = (props) => {
 
 export const Challenge1: React.FC = () => {
   // api call
-  const todos = [{title:'one', isComplete: true}, {title:'two', isComplete: true},{title:'three', isComplete: true},{title:'four', isComplete: true}]
+  const todos = [{title:'Understand components', isComplete: true}, {title:'Pass in props', isComplete: true},{title:'three', isComplete: true},{title:'four', isComplete: true}]
   
   return (
     <div style={{border: '1px solid white'}}>
+      <h2>Challenge 1: Components</h2>
+
       <h1>To do list</h1>
       {todos.map((todo) => <Todo title={todo.title}/>)}
     </div>

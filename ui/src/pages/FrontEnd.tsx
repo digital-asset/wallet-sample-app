@@ -1,5 +1,6 @@
 import React from "react";
 import { Challenge1 } from "../components/Challenges/Challenge1Solution";
+import { ComponentExample } from "../components/Challenges/ComponentExample";
 
 export const FrontEnd: React.FC = () => {
   return (
@@ -14,7 +15,7 @@ export const FrontEnd: React.FC = () => {
         Performance and more complex React patterns are for self study.
       </div>
       <div>
-        <h2>Challenge 1: Components</h2>
+        <ComponentExample/>
         <Challenge1/>
       </div>
     </div>
