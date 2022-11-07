@@ -1,13 +1,16 @@
 import React from "react";
 
-// Challenge: decrement and reset buttons
-// Challenge 2: implement checkbox toggle function
-
 const Counter: React.FC = () => {
   const [value, setValue] = React.useState<number>(0);
-  const onClick = () => {
+  const onInc = () => {
     setValue(value + 1);
   };
+  const onDec = () => {
+    setValue(value-1);
+  }
+  const onReset = () => {
+    setValue(0)
+  }
   return (
     <div>
       <div>
@@ -15,7 +18,9 @@ const Counter: React.FC = () => {
       </div>
       <div>{value}</div>
       <div>
-        <button onClick={onClick}>increment</button>
+        <button onClick={onInc}>increment</button>
+        <button onClick={onDec}>Decrement</button>
+        <button onClick={onReset}>Reset</button>
       </div>
     </div>
   );
@@ -24,7 +29,7 @@ const Counter: React.FC = () => {
 const Checkbox: React.FC = () => {
   const [value, setCheckbox] = React.useState<boolean>(false);
   const onClick = () => {
-    // should set value to false
+    setCheckbox(!value);
   };
   return (
     <div>
@@ -42,30 +47,46 @@ const Checkbox: React.FC = () => {
 };
 
 const Form = () => {
+  const [value, setValue] = React.useState<string>('');
+  
+  const onChange = (e) => {
+    setValue(e.target.value)
+  }
+
   return (
     <div>
-      <h3>Form</h3>
+      <h3>Form Value</h3>
+      <p>{value}</p>
+      <input onChange={onChange} value={value}/>
     </div>
   )
 }
 
-export const List = () => {
+const List = () => {
+  const [list, setList] = React.useState<number[]>([])
+  const onClick = () => {
+    setList([...list, list.length+1])
+  }
   return (
-    <div></div>
+    <div>
+      <h3>list</h3>
+      <button onClick={onClick}>Add</button>
+      {list.map((item) => <div>{item}</div>)}
+      </div>
   )
 }
 
-export const ExampleUseState: React.FC = () => {
+export const ExampleUseStateSolution: React.FC = () => {
   return (
     <div style={{ border: "1px solid white" }}>
       <div>
-        <h1>React.useState Example</h1>
+        <h1>React.useState Example: Solutions</h1>
       </div>
       <div>
         <Counter />
         <Checkbox />
-        <List/>
         <Form/>
+        <List/>
       </div>
     </div>
   );

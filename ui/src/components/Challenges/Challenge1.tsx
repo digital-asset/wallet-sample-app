@@ -16,7 +16,6 @@ export const Challenge1: React.FC = () => {
   return (
     <div style={{ border: "1px solid white" }}>
       <h2>Challenge 1</h2>
-
       <h1>To do list</h1>
       {todos.map((todo) => (
         <div>{todo.title}</div>
