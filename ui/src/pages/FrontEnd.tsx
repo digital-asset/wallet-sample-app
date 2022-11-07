@@ -1,7 +1,7 @@
 import React from "react";
 import { Challenge1 } from "../components/Challenges/Challenge1";
 import { Challenge1Solution } from "../components/Challenges/Challenge1Solution";
-import { ComponentExample } from "../components/Challenges/ComponentExample";
+import { ComponentExample, WrapperExample } from "../components/Challenges/ComponentExample";
 import { ExampleUseState } from "../components/Challenges/ExampleUseState";
 import { ExampleUseStateSolution } from "../components/Challenges/ExampleUseStateSolution";
 import { TodoListSolution } from "./TodoListSolution";
@@ -20,6 +20,9 @@ export const FrontEnd: React.FC = () => {
       </div>
       <div>
         <ComponentExample/>
+        <WrapperExample>
+          <ComponentExample/>
+        </WrapperExample>
         <Challenge1/>
         <Challenge1Solution/>
         <ExampleUseState/>

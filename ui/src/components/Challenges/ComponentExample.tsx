@@ -1,6 +1,7 @@
 import React from "react";
 
 export const ComponentExample: React.FC = () => {
+  // additional logic
   return (
     <div>
       <h1>Heading 1</h1>
@@ -8,6 +9,14 @@ export const ComponentExample: React.FC = () => {
     </div>
   );
 };
+
+export const WrapperExample: React.FC = (props) => {
+  return (
+    <div style={{borderRadius: '8px', border: '1px solid white', margin: '4px'}}>
+      {props.children}
+    </div>
+  )
+}
 
 // Below is extracted version
 
