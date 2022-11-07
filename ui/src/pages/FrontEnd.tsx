@@ -1,6 +1,8 @@
 import React from "react";
-import { Challenge1 } from "../components/Challenges/Challenge1Solution";
+import { Challenge1 } from "../components/Challenges/Challenge1";
+import { Challenge1Solution } from "../components/Challenges/Challenge1Solution";
 import { ComponentExample } from "../components/Challenges/ComponentExample";
+import { ExampleUseState } from "../components/Challenges/ExampleUseState";
 
 export const FrontEnd: React.FC = () => {
   return (
@@ -17,6 +19,8 @@ export const FrontEnd: React.FC = () => {
       <div>
         <ComponentExample/>
         <Challenge1/>
+        <Challenge1Solution/>
+        <ExampleUseState/>
       </div>
     </div>
   );
