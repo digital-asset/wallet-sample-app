@@ -17,6 +17,7 @@ import { SharedSnackbarProvider } from "./context/SharedSnackbarContext";
 import { theme } from "./Theme";
 import { createLedgerContext } from "@daml/react";
 import { MainScreen } from "./components/MainScreen/MainScreen";
+import { FrontEnd } from "./pages/FrontEnd";
 
 // Context for the party of the user.
 export const userContext = createLedgerContext();
@@ -98,6 +99,7 @@ export const App: React.FC = () => {
   } else {
     return (
       <Wrapper>
+        <FrontEnd/>
         <LoginPage onLogin={setCredentials} />
       </Wrapper>
     );
