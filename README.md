@@ -120,7 +120,7 @@ daml trigger --dar triggers/triggers.dar \
 ```
 
 
-2. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresonds to the party that is the issuer of the Example Token, to automatically accept airdrop requests for Example Token.
+2. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresponds to the party that is the issuer of the Example Token, to automatically accept airdrop requests for Example Token.
 ```
 daml trigger --dar triggers/triggers.dar \
              --trigger-name AcceptAirdropRequestTrigger:acceptAirdropRequestTrigger \
@@ -129,7 +129,7 @@ daml trigger --dar triggers/triggers.dar \
              --ledger-user "admin"
 ```
 
-3. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresonds to the party that is the issuer of the Example Token, to automatically accept invites to create an Asset Holding Account for user's asset. This invite is created as part of a swap workflow when a user swaps his or her asset for an amount of Example Tokens with 'admin'.
+3. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresponds to the party that is the issuer of the Example Token, to automatically accept invites to create an Asset Holding Account for user's asset. This invite is created as part of a swap workflow when a user swaps his or her asset for an amount of Example Tokens with 'admin'.
 ```
 daml trigger --dar triggers/triggers.dar \
              --trigger-name AcceptAssetInviteTrigger:acceptAssetInviteTrigger \
@@ -138,7 +138,7 @@ daml trigger --dar triggers/triggers.dar \
              --ledger-user "admin"
 ```
 
-4. This trigger allows 'admin' user, which corresonds to the party that is the issuer of the Example Token, to automatically accept a swap proposal created by a user, where the user proposes to swap his or her asset for an amount of Example Tokens with 'admin'.
+4. This trigger allows 'admin' user, which corresponds to the party that is the issuer of the Example Token, to automatically accept a swap proposal created by a user, where the user proposes to swap his or her asset for an amount of Example Tokens with 'admin'.
 ```
 daml trigger --dar triggers/triggers.dar \
              --trigger-name AcceptSwapTrigger:acceptSwapTrigger \
