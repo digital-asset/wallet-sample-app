@@ -22,13 +22,12 @@ sendAssetHoldingAccountInviteTrigger = T.Trigger
       debug ("assetAccounts", assetAccounts)
       let isET = (\account -> account.assetType.symbol == "ET" && account.assetType.issuer == p && account.owner == p)
       let etAccounts = filter (\(_, contract) -> isET contract) assetAccounts
-      let cids = map fst etAccounts
-      debug ("etAccounts", cids)
+      debug ("etAccounts", map fst etAccounts)
       
-      unless ( DA.Foldable.null requests && DA.Foldable.null cids )
+      unless (DA.Foldable.null requests)
         case etAccounts of 
           [] -> pure ()
-          (cid, c) :: _ -> mapA_(\request -> T.dedupExercise request AssetHoldingAccountRequest_Accept with assetHoldingAccountCid = cid)  requests
+          (cid, _) :: _ -> mapA_(\request -> T.dedupExercise request AssetHoldingAccountRequest_Accept with assetHoldingAccountCid = cid)  requests
 
     ,
     heartbeat = None
