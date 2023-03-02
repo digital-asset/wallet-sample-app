@@ -60,4 +60,4 @@ workflows:
   test:
     jobs:
       - daml_test:
-          daml_sdk_version: "2.3.0"
+          daml_sdk_version: "2.5.3"
