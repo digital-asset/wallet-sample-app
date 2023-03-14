@@ -2,8 +2,6 @@
 module AcceptSwapTrigger where
 
 import qualified Daml.Trigger as T
-import DA.Foldable 
-import DA.Action
 import DA.Optional (whenSome)
 import Account 
 import Asset
@@ -13,33 +11,34 @@ import Asset
 
 acceptSwapTrigger: T.Trigger ()
 acceptSwapTrigger = T.Trigger 
- { initialize = pure (),
-  updateState = \_  -> pure (),
-  registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @Asset, T.registeredTemplate @Trade, T.registeredTemplate @AssetHoldingAccount, T.registeredTemplate @TransferPreApproval, T.registeredTemplate @AssetInSwap],
-  rule = \p -> do
-    debug ("ACCEPT SWAP TRIGGER RUNNING")
+  { 
+    initialize = pure (),
+    updateState = \_  -> pure (),
+    registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @Asset, T.registeredTemplate @Trade, T.registeredTemplate @AssetHoldingAccount, T.registeredTemplate @TransferPreApproval, T.registeredTemplate @AssetInSwap],
+    rule = \p -> do
+      debug ("ACCEPT SWAP TRIGGER FIRED")
 
-    tradeRequests <- T.query @Trade
-    allAssetContracts <- T.query @Asset
+      tradeRequests <- T.query @Trade
+      allAssetContracts <- T.query @Asset
 
-    let isMyIncomingTrades = (\tradeRequests -> tradeRequests.receiver == p)
-    let myTrades = filter (\(_, contract) -> isMyIncomingTrades contract) tradeRequests
+      let isMyIncomingTrades = (\tradeRequests -> tradeRequests.receiver == p)
+      let myTrades = filter (\(_, contract) -> isMyIncomingTrades contract) tradeRequests
 
-    debug ("INCOMING SWAP REQUESTS", myTrades)
-    
-    unless ( DA.Foldable.null myTrades ) do 
+      debug ("Incoming swap requests", myTrades)
+      
+      --unless ( DA.Foldable.null myTrades ) do 
       case myTrades of 
         [] -> pure ()
 
         (tradeCid, c) :: _ -> do
           optOfferedAsset <- T.queryContractId c.offeredAssetCid
-          whenSome optOfferedAsset do
+          whenSome optOfferedAsset
             \offeredAsset -> do
               optOfferedAssetAccount <- T.queryContractKey @AssetHoldingAccount (offeredAsset.asset.assetType, c.receiver)            
-              whenSome optOfferedAssetAccount do
+              whenSome optOfferedAssetAccount
                 \_ -> do
                   optRequestedAssetTxPreApproval <- T.queryContractId c.requestedAssetTxPreApprovalCid
-                  whenSome optRequestedAssetTxPreApproval do
+                  whenSome optRequestedAssetTxPreApproval
                     \requestedAssetTxPreApproval -> do
                       let isRequestedAsset = (\asset -> asset.assetType == requestedAssetTxPreApproval.asset.assetType && asset.owner == p)
                       let requestedAssets = filter(\(cid,contract) -> isRequestedAsset contract) allAssetContracts
@@ -51,15 +50,15 @@ acceptSwapTrigger = T.Trigger
                       then  
                         do 
                           requestedAssetHoldingAccountCid <- T.queryContractKey @AssetHoldingAccount(requestedAssetTxPreApproval.asset.assetType, p)
-                          whenSome requestedAssetHoldingAccountCid do
+                          whenSome requestedAssetHoldingAccountCid
                             \(cid, c) -> do
                               debug("Issuing assets for swap")
                               T.dedupExercise cid Airdrop with 
                                 amount = requestedAssetTxPreApproval.asset.amount
-                      else
-                        do                 
+                      else                 
                           T.dedupExercise tradeCid Trade_Settle with 
                             requestedAssetCids = map fst requestedAssets 
-    debug $ "TRIGGERED",
-  heartbeat = None
-}
+                          
+    ,
+    heartbeat = None
+  }
