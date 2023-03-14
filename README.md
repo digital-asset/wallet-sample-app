@@ -34,45 +34,59 @@ However, all Daml specific aspects of the UI client are written in plain TypeScr
 ## Build Required Files
 <i>*The below build steps are also necessary for deploying the app to Daml Hub. </i>
 
-1. From the root of the project run
+1. On Linux or MacOS from the root of the project run
 ```
 make build
 ```
+On Windows, which doesn't have make utility, or if for any reason make utility doesn't work on your Linux or MacOS, run the following commands from the project root directory
+```
+cd main/User
+daml build -o user.dar
 
+cd ../Asset
+daml build -o asset.dar
+
+cd ../Account
+daml build -o account.dar
+daml build -o setup.dar
+
+cd ../../triggers
+daml build -o triggers.dar
+
+```
 This will generate the [.dar files](https://docs.daml.com/concepts/glossary.html#dar-file-dalf-file), which include `asset.dar`, `account.dar`, `user.dar`, `triggers.dar`,  that need to be deployed to the backend [Daml ledger](https://docs.daml.com/concepts/glossary.html#daml-ledger).  
 
-2. From the root, run 
+2. On Linux or MacOS from the project root run 
 ```
 make codegen
 ```  
-This will execute the below script. Alternatively you can copy and paste the below into the command line.
+On Windows, which doesn't have make utility, or if for any reason make utility doesn't work on your Linux or MacOS, run the following commands from the project root directory
 ```
 daml codegen js  main/Asset/asset.dar main/User/user.dar main/Account/account.dar -o ui/daml.js
 ```  
 The script will generate a `daml.js` folder in the `/ui` directory with the JavaScript bindings.
 
-3. Navigate to the ui directory from the root by running `cd ui` and run `npm install`
+3. Regardless of whether you run Linux, MacOS or Windows, navigate to the ui directory from the project root by running `cd ui` and then run `npm install`
 
 ## Start Backend Processes
-1. In the terminal, from the project root directory, run 
-
+1. On Linux or MacOS from the project root directory run 
 ```
 ./start.sh
 ```
-The script executes several setup operations, which alternatively can be run manually. [Click here](#running-startsh-processes-manually) for details.
+This script executes several setup operations, but since this is a shell script, it can only be run on Linux or MacOS. If you're running Windows or if you'd prefer to start the backend process manually, [click here](#running-startsh-processes-manually).
 
 
 <b>Please note:</b>
 - Each time you make changes to the `.daml` files, you will need to re-run `make build`, and `make codegen` and reinstall the packages on the frontend through `npm i`, so that the frontend packages and dar files are in sync.
-- From the project root you can run `daml ledger list-parties` to check if the parties have been uploaded properly. 
+- From the project root you can run `daml ledger list-parties` to check if the parties have been allocated properly. 
 
 ## Start the Frontend
 2. After running start.sh shell script, the backend of the app is fully functional.
-To launch the app GUI in a separate instance of the terminal cd to the `ui` directory and run `npm start`. This should open a browser window with a login screen. If it doesn't, you can manually navigate your browser to http://localhost:3000.
+To launch the app GUI, in a separate instance of the terminal cd to the `ui` directory and run `npm start`. This should open a browser window with a login screen. If it doesn't, you can manually navigate your browser to http://localhost:3000.
 When running locally, the app has the following pre-defined users: "alice", "bob", "charlie", "ron". These users are created by the startup Daml Script in [Setup.daml module](main/Account/daml/Setup.daml). When prompted to sign-in to the app UI, type in one of the above user names and hit Enter. 
 
-# Running `./start.sh` Processes Manually
-The `./start.sh` performs the below operations, which can be run manually. If you are executing the start script as instructed above, then you do <b>not</b> need to run the below steps. This is for your reference. 
+# Starting the Backend Processes Manually
+The `./start.sh` performs the below operations. On Windows you need to run these operations manually, as described below. On Linux or MacOS you may also prefer to perform these operations manually if you'd like to familiarize yourself with the process of deploying a Daml application.
 
 1. Start the Sandox and upload the dar files.
 2. Start JSON API server.
@@ -80,11 +94,11 @@ The `./start.sh` performs the below operations, which can be run manually. If yo
 4. Start the 4 triggers.
 
 ### 1. Start the Sandbox & Upload the Dar Files
-In the terminal run from the project root directory 
+On Linux or MacOS terminal run from the project root directory 
 ```
 make sandbox
 ``` 
-or copy and paste the below script and run it from the terminal.
+On Windows or if you cannot use make utility copy and paste the below command and run it from the project root directory.
 
 ```
 daml sandbox --dar main/Asset/asset.dar --dar main/User/user.dar --dar main/Account/account.dar 
@@ -92,22 +106,22 @@ daml sandbox --dar main/Asset/asset.dar --dar main/User/user.dar --dar main/Acco
 Leave this terminal running.
 
 ### 2. Start HTTP JSON API Service
-In a separate terminal run from the project root directory
+On Linux or MacOS in a separate terminal run from the project root directory
 ```
 make server
 ```
-This will run the script below. Alternatively you can copy and paste the below into the terminal and run the script.
+On Windows or if you cannot use make utility copy and paste the below command and run it from the project root directory.
 ```
 daml json-api --config json-api-app.conf
 ```
 Leave this terminal running.
 ### 3. Run Setup Script
-In another terminal run the setup script. This script allocates parties, creates an Example Token asset account and Example Token asset contract.   
+Regardless of whether you run Linux, MacOS or Windows, in another terminal run the setup script. This script allocates parties, creates an Example Token asset account and Example Token asset contract.   
 ```
 daml script --dar ./main/Account/account.dar --script-name Setup:setup --ledger-host localhost --ledger-port 6865
 ```
 ### 4. Start 4 Triggers 
-Make sure to run each trigger in a separate instance of the terminal and leave all these terminals running.
+Make sure to run each trigger in a separate instance of the terminal and leave all these terminals running. The instructions in this step apply regardless of the operating system you're running.
 For details on why the triggers are needed [click here](#trigger-uses)
 
 1. From the root directory, start the `sendAssetHoldingAccountInviteTrigger` by running the following command in another terminal. This trigger sends an invitation to create an Asset Holding Account for Example Token to new users.

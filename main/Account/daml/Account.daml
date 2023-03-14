@@ -23,6 +23,8 @@ import Asset
 -- the function returns the total amount of input assets. Otherwise the action fails.
 validateTxInputs: [ContractId Asset] -> ContractId AssetHoldingAccount -> Decimal -> Update Decimal
 validateTxInputs assetCids accountCid outputAmount = do
+  assertMsg "Duplicate Asset ContractIds not allowed in the input list" $
+    unique assetCids
   account <- fetch accountCid
   totAssetAmount <- sum <$> forA assetCids \assetCid -> do
     asset <- fetch assetCid
