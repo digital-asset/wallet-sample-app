@@ -61,7 +61,7 @@ waitForServer(){
 
 addParties(){
   echo "Adding Parties"
-	daml script --dar ./main/Account/account.dar --script-name Setup:setup --ledger-host localhost --ledger-port 6865
+	daml script --dar ./main/Setup/setup.dar --script-name Setup:setup --ledger-host localhost --ledger-port 6865
   echo "Parties added"
 }
 

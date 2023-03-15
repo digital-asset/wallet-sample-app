@@ -48,13 +48,15 @@ daml build -o asset.dar
 
 cd ../Account
 daml build -o account.dar
+
+cd ../Setup
 daml build -o setup.dar
 
 cd ../../triggers
 daml build -o triggers.dar
 
 ```
-This will generate the [.dar files](https://docs.daml.com/concepts/glossary.html#dar-file-dalf-file), which include `asset.dar`, `account.dar`, `user.dar`, `triggers.dar`,  that need to be deployed to the backend [Daml ledger](https://docs.daml.com/concepts/glossary.html#daml-ledger).  
+This will generate the [.dar files](https://docs.daml.com/concepts/glossary.html#dar-file-dalf-file), which include `asset.dar`, `account.dar`, `user.dar`,  that need to be deployed to the backend [Daml ledger](https://docs.daml.com/concepts/glossary.html#daml-ledger). This will also generate `setup.dar` and `triggers.dar` files used to initialize the ledger and for off-ledger automation.
 
 2. On Linux or MacOS from the project root run 
 ```
@@ -118,7 +120,7 @@ Leave this terminal running.
 ### 3. Run Setup Script
 Regardless of whether you run Linux, MacOS or Windows, in another terminal run the setup script. This script allocates parties, creates an Example Token asset account and Example Token asset contract.   
 ```
-daml script --dar ./main/Account/account.dar --script-name Setup:setup --ledger-host localhost --ledger-port 6865
+daml script --dar ./main/Setup/setup.dar --script-name Setup:setup --ledger-host localhost --ledger-port 6865
 ```
 ### 4. Start 4 Triggers 
 Make sure to run each trigger in a separate instance of the terminal and leave all these terminals running. The instructions in this step apply regardless of the operating system you're running.

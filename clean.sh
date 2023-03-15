@@ -1,7 +1,8 @@
 # Deletes all locally built files
 echo "Removing dar files..."
 cd main/Account && rm -f -r .daml && rm -f *.dar
-cd ../Asset && rm -f -r .daml && rm -f *.dar 
+cd ../Asset && rm -f -r .daml && rm -f *.dar
+cd ../Setup && rm -f -r .daml && rm -f *.dar  
 cd ../User && rm -f -r .daml && rm -f *.dar 
 cd ../../triggers && rm -f -r .daml && rm -f *.dar
 cd ../ui
