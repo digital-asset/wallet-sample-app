@@ -8,11 +8,11 @@ echo "Asset dar file built"
 
 cd ../Account
 daml build -o account.dar
-daml build -o setup.dar
-
 echo "Account dar file built"
-echo "Setup dar file built"
 
+cd ../Setup
+daml build -o setup.dar
+echo "Setup dar file built"
 
 cd ../../triggers
 daml build -o triggers.dar
