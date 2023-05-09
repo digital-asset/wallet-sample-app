@@ -312,24 +312,27 @@ template Trade
       do
         -- Receiver pre-approves the transfer of asset offered by proposer from proposer to receiver
         offeredAsset <- fetch offeredAssetCid
-        (receiverReceivingAssetHoldingAccountCid, _) <- fetchByKey @AssetHoldingAccount (offeredAsset.asset.assetType, receiver)
-        offeredAssetTxPreApprovalCid <- exercise receiverReceivingAssetHoldingAccountCid Preapprove_Transfer_In with
+        offeredAssetTxPreApprovalCid <- exerciseByKey @AssetHoldingAccount 
+          (offeredAsset.asset.assetType, receiver) Preapprove_Transfer_In with
             asset = offeredAsset.asset
         -- Receiver prepares the asset requested by the proposer
         requestedAsset <- fetch requestedAssetTxPreApprovalCid
         assertMsg "Non fungible assets must be traded one at a time" $
           requestedAsset.asset.assetType.fungible || L.length requestedAssetCids==1
         (receiverSendingAssetHoldingAccountCid, _) <- fetchByKey @AssetHoldingAccount (requestedAsset.asset.assetType, receiver)
-        totRequestedAssetAmount <- validateTxInputs requestedAssetCids receiverSendingAssetHoldingAccountCid requestedAsset.asset.amount
-        preparedRequestedAssetCids <- exercise receiverSendingAssetHoldingAccountCid Merge_Split with
-          assetCids = requestedAssetCids
-          outputAmounts = [requestedAsset.asset.amount]
+        --totRequestedAssetAmount <- validateTxInputs requestedAssetCids receiverSendingAssetHoldingAccountCid requestedAsset.asset.amount
+        preparedRequestedAssetCids <- exerciseByKey @AssetHoldingAccount 
+          (requestedAsset.asset.assetType, receiver) Merge_Split with
+            assetCids = requestedAssetCids
+            outputAmounts = [requestedAsset.asset.amount]
         -- Transfer offered asset from proposer to receiver
-        newReceiverAsset <- exercise offeredAssetTxPreApprovalCid TransferPreApproval_TransferAssetInSwap 
-          with assetInSwapCid = offeredAssetCid
+        newReceiverAsset <- exercise offeredAssetTxPreApprovalCid 
+          TransferPreApproval_TransferAssetInSwap 
+            with assetInSwapCid = offeredAssetCid
         -- Transfer requested asset from receiver to proposer
-        newProposerAsset <- exercise requestedAssetTxPreApprovalCid TransferPreApproval_TransferAsset 
-          with txAssetCid = last preparedRequestedAssetCids
+        newProposerAsset <- exercise requestedAssetTxPreApprovalCid 
+          TransferPreApproval_TransferAsset 
+            with txAssetCid = last preparedRequestedAssetCids
         return (newProposerAsset, newReceiverAsset)
 
 
