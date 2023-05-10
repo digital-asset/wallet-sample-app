@@ -41,9 +41,7 @@ accountBalance : AssetHoldingAccount -> Script Decimal
 accountBalance account = do
   assets <- queryFilter @Asset account.owner
     \asset -> (asset.owner==account.owner) && (asset.assetType==account.assetType)
-  case assets of
-    [] -> return 0.0
-    _ -> return $ sum . map (\x -> x.amount) $ (unzip assets)._2
+  return $ sum . map (\x -> x.amount) $ (unzip assets)._2
 
 assertBalance: Party -> ContractId AssetHoldingAccount -> Decimal -> Script ()
 assertBalance party account_cid expected_amount = do 
@@ -75,6 +73,8 @@ accountBalance_test = do
       owner = issuer
       airdroppable = False
       resharable = True
+
+  assertBalance issuer account_cid 0.0
  
   asset_cid_0 <- submit issuer do
     createCmd Asset with
