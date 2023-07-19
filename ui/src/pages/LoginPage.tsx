@@ -149,7 +149,7 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
         <Button fullWidth variant="contained" onClick={handleLogin}>
           Log in to wallet
         </Button>
-        <Button  onClick={() => openInNewTab('https://myinteractive.video/w/fgbRdGusDeoo')} sx={{ mt: 2 }} variant="outlined" size="small">
+        <Button  onClick={() => openInNewTab('https://www.youtube.com/watch?v=Y4TMNedgG3Q')} sx={{ mt: 2 }} variant="outlined" size="small">
           Watch Walkthrough Video
         </Button>
         {/* FORM_END */}

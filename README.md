@@ -8,7 +8,7 @@ Copyright (c) 2022 Digital Asset (Switzerland) GmbH and/or its affiliates. All R
 
 The Wallet Sample App is an open-source digital asset wallet powered by [Daml](https://www.digitalasset.com/developers) smart contracts and [Daml/React](https://docs.daml.com/app-dev/bindings-ts/) Javascript library, and deployed in [Daml Hub](https://www.digitalasset.com/products/daml-hub). This app provides developers with a working example of how to implement essential workflows related to digital assets (or tokens) such as asset issuance, airdrop, transfer and atomic swap. We assume the developer already has basic knowledge of Daml.
 
-You can watch the video walkthrough of the application [here](https://myinteractive.video/w/fgbRdGusDeoo)
+You can watch the video walkthrough of the application [here](https://www.youtube.com/watch?v=Y4TMNedgG3Q)
 
 You can play around with user functionality in the Wallet Daml Sample App without deploying the app, as it is continuously running at [https://wallet.daml.app](https://wallet.daml.app). To sign in to the app running at [https://wallet.daml.app](https://wallet.daml.app), use your Daml Hub account. You can create a free [Daml Hub](https://www.digitalasset.com/products/daml-hub) account, if you don't already have one.
 
