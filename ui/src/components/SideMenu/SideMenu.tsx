@@ -75,7 +75,7 @@ export const SideMenu: React.FC<SideMenuProps> = (props) => {
               <ListItemText className={classes.root}>{item.label}</ListItemText>
             </ListItemButton>
           ))}
-          <ListItemButton onClick={() => openInNewTab('https://myinteractive.video/w/fgbRdGusDeoo')}>
+          <ListItemButton onClick={() => openInNewTab('https://www.youtube.com/watch?v=Y4TMNedgG3Q')}>
             Walkthrough video
           </ListItemButton>
         </List>

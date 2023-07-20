@@ -14,7 +14,7 @@ export const GettingStartedMessage: React.FC = () => {
             If you haven't watched this <LinkBtn
               sx={{ textDecoration: "none" }}
               target="_blank"
-              href="https://myinteractive.video/w/fgbRdGusDeoo"
+              href="https://www.youtube.com/watch?v=Y4TMNedgG3Q"
             >
               walkthrough video
             </LinkBtn> yet, first watch it to get a feel for what this app will show you. Then dive into the guide below. This guide will walk you through the following:
