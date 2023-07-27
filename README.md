@@ -69,6 +69,24 @@ daml codegen js  main/Asset/asset.dar main/User/user.dar main/Account/account.da
 The script will generate a `daml.js` folder in the `/ui` directory with the JavaScript bindings.
 
 3. Regardless of whether you run Linux, MacOS or Windows, navigate to the ui directory from the project root by running `cd ui` and then run `npm install`
+
+## Start Backend Processes
+On Linux or MacOS from the project root directory run 
+```
+./start.sh
+```
+This script executes several setup operations, but since this is a shell script, it can only be run on Linux or MacOS. If you're running Windows or if you'd prefer to start the backend process manually, [click here](#starting-the-backend-processes-manually).
+
+
+<b>Please note:</b>
+Each time you make changes to the `.daml` files, you will need to re-run `make build`, and `make codegen` and reinstall the packages on the frontend through `npm i`, so that the frontend packages and dar files are in sync.
+
+## Start the Frontend
+After running start.sh shell script, the backend of the app is fully functional.
+To launch the app GUI, in a separate instance of the terminal cd to the `ui` directory and run `npm start`. This should open a browser window with a login screen. If it doesn't, you can manually navigate your browser to http://localhost:3000.
+When running locally, the app has the following pre-defined users: "alice", "bob", "charlie", "ron". These users are created by the startup Daml Script in [Setup.daml module](main/Account/daml/Setup.daml). When prompted to sign-in to the app UI, type in one of the above user names and hit Enter. 
+
+
 <b>Please note:</b>
 If you use Node v18 or higher you need to replace the following two lines
 ```
@@ -88,21 +106,6 @@ in the "scripts" section of the `ui/package.json` file.
 ```
 Make sure to save `ui/package.json` file after editing it and before running `npm install`.
 
-## Start Backend Processes
-1. On Linux or MacOS from the project root directory run 
-```
-./start.sh
-```
-This script executes several setup operations, but since this is a shell script, it can only be run on Linux or MacOS. If you're running Windows or if you'd prefer to start the backend process manually, [click here](#starting-the-backend-processes-manually).
-
-
-<b>Please note:</b>
-Each time you make changes to the `.daml` files, you will need to re-run `make build`, and `make codegen` and reinstall the packages on the frontend through `npm i`, so that the frontend packages and dar files are in sync.
-
-## Start the Frontend
-2. After running start.sh shell script, the backend of the app is fully functional.
-To launch the app GUI, in a separate instance of the terminal cd to the `ui` directory and run `npm start`. This should open a browser window with a login screen. If it doesn't, you can manually navigate your browser to http://localhost:3000.
-When running locally, the app has the following pre-defined users: "alice", "bob", "charlie", "ron". These users are created by the startup Daml Script in [Setup.daml module](main/Account/daml/Setup.daml). When prompted to sign-in to the app UI, type in one of the above user names and hit Enter. 
 
 # Starting the Backend Processes Manually
 The `./start.sh` performs the below operations. On Windows you need to run these operations manually, as described below. On Linux or MacOS you may also prefer to perform these operations manually if you'd like to familiarize yourself with the process of deploying a Daml application.
