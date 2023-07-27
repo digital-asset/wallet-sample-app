@@ -56,7 +56,7 @@ cd ../../triggers
 daml build -o triggers.dar
 
 ```
-This will generate the [.dar files](https://docs.daml.com/concepts/glossary.html#dar-file-dalf-file), which include `asset.dar`, `account.dar`, `user.dar`,  that need to be deployed to the backend [Daml ledger](https://docs.daml.com/concepts/glossary.html#daml-ledger). This will also generate `setup.dar` and `triggers.dar` files used to initialize the ledger and for off-ledger automation.
+This will generate the [.dar files](https://docs.daml.com/concepts/glossary.html#dar-file-dalf-file), which include `asset.dar`, `account.dar`, `user.dar` in their respective folders within the main folder,  that need to be deployed to the backend [Daml ledger](https://docs.daml.com/concepts/glossary.html#daml-ledger). This will also generate `setup.dar` and `triggers.dar` files used to initialize the ledger and for off-ledger automation.
 
 2. On Linux or MacOS from the project root run 
 ```
@@ -69,18 +69,35 @@ daml codegen js  main/Asset/asset.dar main/User/user.dar main/Account/account.da
 The script will generate a `daml.js` folder in the `/ui` directory with the JavaScript bindings.
 
 3. Regardless of whether you run Linux, MacOS or Windows, navigate to the ui directory from the project root by running `cd ui` and then run `npm install`
+<b>Please note:</b>
+If you use Node v18 or higher you need to replace the following two lines
+```
+"start": "react-scripts start",
+"build": "react-scripts build",
+```
+in the "scripts" section of the `ui/package.json` file.
+- On Linux or MacOS use
+```
+"start": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
+"build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
+```
+- On Windows use
+```
+"start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
+"build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
+```
+Make sure to save `ui/package.json` file after editing it and before running `npm install`.
 
 ## Start Backend Processes
 1. On Linux or MacOS from the project root directory run 
 ```
 ./start.sh
 ```
-This script executes several setup operations, but since this is a shell script, it can only be run on Linux or MacOS. If you're running Windows or if you'd prefer to start the backend process manually, [click here](#running-startsh-processes-manually).
+This script executes several setup operations, but since this is a shell script, it can only be run on Linux or MacOS. If you're running Windows or if you'd prefer to start the backend process manually, [click here](#starting-the-backend-processes-manually).
 
 
 <b>Please note:</b>
-- Each time you make changes to the `.daml` files, you will need to re-run `make build`, and `make codegen` and reinstall the packages on the frontend through `npm i`, so that the frontend packages and dar files are in sync.
-- From the project root you can run `daml ledger list-parties` to check if the parties have been allocated properly. 
+Each time you make changes to the `.daml` files, you will need to re-run `make build`, and `make codegen` and reinstall the packages on the frontend through `npm i`, so that the frontend packages and dar files are in sync.
 
 ## Start the Frontend
 2. After running start.sh shell script, the backend of the app is fully functional.
@@ -201,7 +218,7 @@ Click the ledger, then click `upload file`
 - triggers.dar
 
 ### Upload UI Zip File
-2. In addition we need to create `wallet-refapp-ui.zip` file by running `npm run zip` command from in the `ui` directory. This zip file contains the app UI and also needs to be uploaded to Daml Hub.
+2. In addition we need to create `wallet-refapp-ui.zip` file by running `npm run zip` command from the `ui` directory. This zip file contains the app UI and also needs to be uploaded to Daml Hub.
 ### Setup Admin Account from Daml Hub Console
 3. Setup Admin Account. From the Daml Hub console, click `Identities` and under `Default Parties` add the `UserAdmin`
 ![image](damlHubScreenshots/Identities.png)
