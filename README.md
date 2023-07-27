@@ -104,7 +104,7 @@ in the "scripts" section of the `ui/package.json` file.
 "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
 "build": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts build",
 ```
-Make sure to save `ui/package.json` file after editing it and before running `npm install`.
+Make sure to save `ui/package.json` file after editing it and before running `npm start`.
 
 
 # Starting the Backend Processes Manually
