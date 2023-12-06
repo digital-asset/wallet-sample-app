@@ -203,44 +203,49 @@ To learn how to deploy Daml apps to Daml Hub see [Daml Hub Quickstart](https://h
 
 
 ## Setup Project on Daml Hub
-Once logged in, click `New Project` on the right side of the hub interface. 
+Once logged in, click `Create Project` on the right hand side of the hub interface. 
 
 ![image](damlHubScreenshots/DamlHubNewProjectButton.png)
 
-Follow through the steps displayed in the interface, you will be asked to provide a project name and ledger name. 
+You will be asked to provide the project name and the ledger name. Click `Continue` to move to the next page.
 
 ### Uploading Dar Files
-Click the ledger, then click `upload file`
-
-![image](damlHubScreenshots/UploadFileButton.png)
-
- to upload the dar files created in ["Build Required Files"](#build-required-files) step. These include:
-- asset.dar
+In this step you need to upload the dar files created in ["Build Required Files"](#build-required-files) step. These include:
 - account.dar
+- asset.dar
 - user.dar
 - triggers.dar
 
-### Upload UI Zip File
-2. In addition we need to create `wallet-refapp-ui.zip` file by running `npm run zip` command from the `ui` directory. This zip file contains the app UI and also needs to be uploaded to Daml Hub.
-### Setup Admin Account from Daml Hub Console
-3. Setup Admin Account. From the Daml Hub console, click `Identities` and under `Default Parties` add the `UserAdmin`
-![image](damlHubScreenshots/Identities.png)
-This will be needed so you can run the triggers as the `UserAdmin`
+For each of the above files click `Upload File` and navigate to the file location on the local machine.
 
-### Configure triggers for Daml Hub
-From Deployments on the left hand menu, 
-1. click on `triggers.dar` > `Configure New Instance`
-2. Under `Trigger Name`, select the first trigger
+![image](damlHubScreenshots/UploadFileButton.png)
+
+### Upload UI Zip File
+In addition we need to create `wallet-refapp-ui.zip` file by running `npm run zip` command from the `ui` directory. This zip file contains the app UI and also needs to be uploaded to Daml Hub by clicking `Upload File` in the Daml Hub UI.
+
+Once all files that need to be uploaded to the ledger have been selected, click `Launch Ledger`. This will create the ledger with the name you specified and upload the files. Click on the ledger name under the project created. This will take you to the Deployments page with the actions that need to happen next listed under `Action Needed`. Note that at this point the files have been uploaded to the ledger, but not yet deployed on it. In other words the Daml models (dar files), Daml Triggers and the UI are ready for deployment, but are not yet running on the ledger. To make them run follow the prompts on the page as described below.
+
+
+### 1. Deploy instances of dar files and the UI zip file to the running ledger
+It may be that the top action suggested on the lage is to deploy the triggers. In this case scroll down the page until you see account.dar, asset.dar, user.dar and wallet-refapp-ui.zip files. Click `Deploy Instance` button for each of these files.
+
+### 2. Configure triggers for Daml Hub
+It may take a few minutes for the ledger to initialize. During this time you may see "Loading parties..." in the Party field under the action to deploy Daml Triggers in the triggers.dar. Once the ledger is started you can configure the triggers.
+- Under `Trigger Name`, select the first trigger
 ![image](damlHubScreenshots/DamlHubTriggerName.png)
-3. Under `Party`, select `UserAdmin`
-4. Click `Deploy Instance`, and repeat for all other triggers.
+- Under `Party`, select `UserAdmin`. If UserAdmin party is not listed in the drop-down you may need to refresh the page and select Daml Triggers under the Deployments.
+- Click `Deploy Instance`, and repeat for all other triggers.
+
 
 ### Setup Admin Account on the Deployed App
+This step initializes the ledger with some data required for the Daml Triggers implemented in this app. Specifically the step sets up the asset holding account for ET (example token) asset, which is issued by the default party (aka UserAdmin party), and which is used to perform automatically accepted and settled swaps with the default party. See [Trigger Uses](#trigger-uses) setion for more details.
 Before the triggers can run properly, you will need to 
-1. Login to the app using the JWT of the UserAdmin
+1. Click the Identities tab and copy JWT for the UserAdmin party
  ![image](damlHubScreenshots/DamlHubUserAdmin.png)
-2. On the left hand side menu, click `Create`, you will arrive at the asset account creation page
-3. In the `symbol` field, name the asset `ET`, then click `Create` at the bottom to finally create the `ET` asset account. 
+2. Launch the app in the new tab by clicking the Subdomain link in the bottom left corner of the above page. This will open the app login page in a new tab. Click `Login with Token` button. Login to the app using the JWT of the UserAdmin party
+3. On the left hand side menu, click `Create`. You will arrive at the asset holding account creation page
+4. In the `symbol` field, name the asset `ET`, then click `Create` at the bottom to create the `ET` asset holding account. 
+Once this account is created, other users will be able to receive the automatic ET account asset invitations sent by the triggers, and users will also be able to request airdrops and swap with the UserAdmin.
 
-Once this account is created, other users will be able to receive the automatic ET account asset invitations sent by the triggers, and users will also be able to request airdrops and swap with the UserAdmin. 
+Now the app is fully set up. You can log out from the app and login by clicking `Log into Wallet` button in the login page and using your Daml Hub account credentials to sign in. The first time you log into the app as a user you should see an invite to create your asset holding account for ET. Accept the invite and follow the instructions on the right hand side of the app UI to issue your own assets and explore other workflows in the app.
 
