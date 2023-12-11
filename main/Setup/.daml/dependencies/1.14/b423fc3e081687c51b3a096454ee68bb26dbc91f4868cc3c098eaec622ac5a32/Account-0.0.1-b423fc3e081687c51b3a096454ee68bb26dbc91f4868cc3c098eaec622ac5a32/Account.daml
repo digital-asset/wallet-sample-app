@@ -1,0 +1,448 @@
+-- Copyright (c) 2021 Digital Asset (Switzerland) GmbH and/or its affiliates. All rights reserved.
+-- SPDX-License-Identifier: Apache-2.0
+
+-- This module implements an account for holding assets.
+-- An AssetHoldingAccount can hold only one type of asset. A separate AssetHoldingAccount needs to be created for each type of asset.
+-- Account creation follows propose/accept pattern implemented through AssetHoldingAccount template with
+-- Invite_New_Asset_Holder choice, that creates AssetHoldingAccountProposal contract. 
+-- AssetHoldingAccountProposal_Accept choice creates new AssetHoldingAccount template with the
+-- proposal recipient party as the account owner.
+module Account where
+
+import DA.Action
+import DA.List as L
+import DA.Set as Set
+import DA.Foldable (forA_)
+import DA.Optional (whenSome)
+import Asset
+
+-- This function validates whether the list of input assets can be merged and then split for use in
+-- the Merge_Split, Create_Transfers and Create_Trade choices of AssetHoldingAccount template and in
+-- the Trade_Settle choice of Trade template.
+-- If the assets can be merged and the total amount is sufficient to split it into outputAmounts, then
+-- the function returns the total amount of input assets. Otherwise the action fails.
+validateTxInputs: [ContractId Asset] -> ContractId AssetHoldingAccount -> Decimal -> Update Decimal
+validateTxInputs assetCids accountCid outputAmount = do
+  assertMsg "Duplicate Asset ContractIds not allowed in the input list" $
+    unique assetCids
+  account <- fetch accountCid
+  totAssetAmount <- sum <$> forA assetCids \assetCid -> do
+    asset <- fetch assetCid
+    assertMsg "Asset type mismatch between asset and account" $
+      asset.assetType == account.assetType
+    assertMsg "Owner mismatch between asset and account" $
+      asset.owner == account.owner
+    return asset.amount
+  assertMsg "Insufficient funds passed to create all output assets" $
+    totAssetAmount >= outputAmount
+  return totAssetAmount
+
+-- AssetHoldingAccount represents an account, where Asset contracts can be held
+-- Assets held in the account are all Asset contracts from Active Contract Set,
+-- where assetType and owner match between Asset and AssetHoldingAccount.
+-- The sum of the amounts of the assets held in the account represents the account balance.
+template AssetHoldingAccount with
+    -- Combination of issuer, symbol, fungible and reference properties define the asset type that can be held in the account.
+    assetType : AssetType
+    -- The owner of the account.
+    owner : Party
+    -- Specifies whether the issuer can create the Asset in owner's account.
+    -- Since the Asset contract is signed by both issuer and owner, the issuer cannot unilaterally
+    -- create an Asset, where owner/=issuer, by exercising "create Asset" command. 
+    -- With airdroppable account the issuer can create Asset in owner's account by exercising
+    -- Ardrop choice on the owner's AssetHoldingAccount contract.
+    airdroppable : Bool
+    -- Specifies whether only the issuer can invite parties to create AssetHoldingAccount
+    -- or both issuer and owner have this privilege.
+    resharable : Bool 
+  where
+    signatory assetType.issuer, owner
+    key (assetType, owner) : (AssetType, Party)
+    maintainer key._1.issuer
+
+    -- Send an invite for a party to create AssetHoldingAccount for this asset type.
+    nonconsuming choice Invite_New_Asset_Holder : ContractId AssetHoldingAccountProposal
+      with
+        recipient : Party
+      controller if resharable then owner else assetType.issuer
+      do
+        create AssetHoldingAccountProposal with
+          account = this
+          recipient
+
+    -- A choice for issuer to aidrop the Asset into owner's account.
+    -- This choice can also be used by the issuer to mint asset into own account.
+    nonconsuming choice Airdrop : ContractId Asset
+      with
+        amount : Decimal
+      controller assetType.issuer 
+      do
+        assertMsg "Cannot create airdrop. The target account does not accept airdrops" $
+          airdroppable || assetType.issuer==owner
+        assertMsg "Cannot create airdrop. The amount of non fungible asset must be 1.0" $ 
+          assetType.fungible || amount==1.0
+        create Asset with
+          assetType
+          owner
+          amount
+          observers = Set.empty
+
+    -- This choice consolidates the input set of assets in the account and from the total amount
+    -- creates new set of Asset contracts in the desired input amounts plus one more Asset with the remaining amount
+    -- The purpose is to create Asset contracts in desired denomination from the list of assets in the account
+    nonconsuming choice Merge_Split : [ContractId Asset]
+      with
+        -- The list of assets to consolidate
+        assetCids : [ContractId Asset]
+        -- The desired amounts of the output assets
+        outputAmounts : [Decimal]
+      controller owner
+      do
+        assertMsg "Non fungible assets cannot be merged" $
+          assetType.fungible
+        totAssetAmount <- validateTxInputs assetCids self $ sum outputAmounts
+        forA_ assetCids archive 
+        let 
+          createOutputAssets assetsList amt = do
+            assertMsg "Each output asset amount must be positive" $
+              amt > 0.0
+            a <- create Asset with
+              assetType
+              owner
+              amount = amt
+              observers = Set.empty
+            return $ a :: assetsList
+        outputAssetCids <- foldlA createOutputAssets [] outputAmounts
+        if (totAssetAmount > sum outputAmounts)
+        then do 
+          a <- create Asset with
+            assetType
+            owner
+            amount = (totAssetAmount - sum outputAmounts)
+            observers = Set.empty
+          return $ a :: outputAssetCids
+        else
+          return outputAssetCids
+
+    -- The purpose of this choice is to allow client application to create a set of transfer proposals using multiple Asset 
+    -- contracts held in the account. Client application can query for all active Asset contracts, where assetType and owner 
+    -- match between Asset and AssetHoldingAccount, which represent assets held in the account.
+    -- Then the list of Asset contract Ids can be passed to this choice allowing the transfer proposals to be created
+    -- as long as the total amount of all transfers is less than the total amount of assets passed to the choice.
+    nonconsuming choice Create_Transfers : ()
+      with
+        assetCids : [ContractId Asset]
+        transfers : [(Decimal, Party)]
+      controller owner
+      do
+        let (txAmounts, txRecipients) = unzip transfers
+        assertMsg "Non fungible assets must be transferred one at a time and the amount of non fungible asset must be 1.0" $
+          assetType.fungible || (L.length assetCids==1 && L.length transfers==1 && L.head txAmounts==1.0)
+        totAssetAmount <- validateTxInputs assetCids self $ sum txAmounts
+        forA_ assetCids archive
+        forA_ transfers (\tx -> do
+          assertMsg "Each transfer amount must be positive" $
+            tx._1 > 0.0
+          create AssetTransfer with
+            asset = Asset with
+              assetType
+              owner
+              amount = tx._1
+              observers = Set.empty
+            recipient = tx._2
+          )
+        when (totAssetAmount > sum txAmounts) do 
+          create Asset with
+            assetType
+            owner
+            amount = (totAssetAmount - sum txAmounts)
+            observers = Set.empty
+          return ()
+
+    -- The purpose of this choice is to obtain issuer's authority required to accept the transfer.
+    -- This construct ensures that transfers cannot be made to a party without an AssetHoldingAccount corresponding to the asset
+    nonconsuming choice Deposit_Transfer_Into_Account : ContractId Asset
+      with
+        transferCid : ContractId AssetTransfer
+      controller owner 
+      do
+        transfer <- fetch transferCid
+        assertMsg "Asset type mismatch between transfer asset and account" $
+          transfer.asset.assetType == assetType
+        assertMsg "Mismatch between account owner and transfer recipient" $
+          transfer.recipient == owner
+        exercise transferCid Accept_Transfer
+
+    -- This choice allows to propose a trade using a set of assets held in the account
+    nonconsuming choice Create_Trade : ContractId Trade
+      with
+        -- The list of assets to create the offered asset from
+        assetCids : [ContractId Asset]
+        -- The amount of offered asset in trade proposal
+        offeredAssetAmount : Decimal
+        -- The asset to trade or swap the offered asset for
+        requestedAsset : Asset
+      controller owner
+      do
+        assertMsg "Non fungible assets must be traded one at a time" $
+          assetType.fungible || L.length assetCids==1
+        totAssetAmount <- validateTxInputs assetCids self offeredAssetAmount
+        forA_ assetCids archive
+        offeredAssetCid <- create AssetInSwap with
+          asset = Asset with
+            assetType
+            owner
+            amount = offeredAssetAmount
+            observers = Set.empty
+          receiver = requestedAsset.owner
+        when (totAssetAmount > offeredAssetAmount) do
+          create Asset with
+            assetType
+            owner
+            amount = (totAssetAmount - offeredAssetAmount)
+            observers = Set.empty
+          return ()
+        requestedAssetTxPreApprovalCid <- 
+          exerciseByKey @AssetHoldingAccount (requestedAsset.assetType, owner) Preapprove_Transfer_In with 
+            asset = requestedAsset
+        create Trade with
+          proposer = owner
+          receiver = requestedAsset.owner
+          offeredAssetCid
+          requestedAssetTxPreApprovalCid
+
+    -- This choice creates a pre-approval for incoming transfer, which gives the transfer originator
+    -- the authority to deposit transfer asset to this account
+    nonconsuming choice Preapprove_Transfer_In : ContractId TransferPreApproval
+      with
+        asset : Asset
+      controller owner
+      do
+        create TransferPreApproval with
+          asset
+          newOwner = owner
+
+    -- Propose/accept pattern for closing the account allows issuer to burn assets held in the account.
+    -- When accepting AssetHoldingAccountCloseProposal, the issuer should archive all Asset contracts
+    -- corresponding to AssetHoldingAccount being closed. This must be imeplemented client side,
+    -- since Daml only allows to query Active Contract Set on the ledger by ContractId or by key,
+    -- thus the list of assets in the account can only be created client side.
+    nonconsuming choice Close_Account : ContractId AssetHoldingAccountCloseProposal
+      controller owner
+      do
+        create AssetHoldingAccountCloseProposal with 
+          account = this
+
+template AssetHoldingAccountProposal with
+    account : AssetHoldingAccount
+    recipient : Party
+  where
+    signatory account.assetType.issuer
+    observer recipient
+
+    choice AssetHoldingAccountProposal_Accept : ContractId AssetHoldingAccount
+      controller recipient 
+      do
+        create account with
+          owner = recipient
+
+    choice AssetHoldingAccountProposal_Reject : ()
+      controller recipient 
+      do
+        return ()
+
+template AssetHoldingAccountCloseProposal with
+    account : AssetHoldingAccount
+  where
+    signatory account.assetType.issuer, account.owner
+
+    -- The client application should archive all Asset contracts corresponding to AssetHoldingAccount
+    -- when this choice is exercised.
+    choice AssetHoldingAccountCloseProposal_Accept : () 
+      with
+        assetCids : [ContractId Asset]
+      controller account.assetType.issuer
+      do
+        accountCid <- lookupByKey @AssetHoldingAccount (account.assetType, account.owner)
+        whenSome accountCid do
+          \accCid -> do
+            forA_ assetCids \assetCid -> do
+              asset <- fetch assetCid
+              assertMsg "Asset type mismatch between asset and account" $
+                asset.assetType == account.assetType
+              assertMsg "Owner mismatch between asset and account" $
+                asset.owner == account.owner
+              archive assetCid
+            archive accCid
+        return ()
+
+    choice AssetHoldingAccountCloseProposal_Reject : ()
+      controller account.assetType.issuer 
+      do
+        return ()
+
+-- The Trade templates represents a proposal for a swap of two assets between two parties: the proposer and the receiver
+template Trade
+  with
+    proposer : Party
+    receiver : Party
+    offeredAssetCid : ContractId AssetInSwap
+    requestedAssetTxPreApprovalCid : ContractId TransferPreApproval
+  where
+    signatory proposer
+    observer receiver
+
+    choice Trade_Cancel : ()
+      controller proposer
+      do
+        exercise offeredAssetCid Cancel_Swap
+        return ()
+
+    choice Trade_Reject : ()
+      controller receiver
+      do
+        exercise offeredAssetCid Reject_Swap
+        return ()
+
+    choice Trade_Settle : (ContractId Asset, ContractId Asset)
+      with
+        requestedAssetCids: [ContractId Asset]
+
+      controller receiver
+      do
+        -- Receiver pre-approves the transfer of asset offered by proposer from proposer to receiver
+        offeredAsset <- fetch offeredAssetCid
+        offeredAssetTxPreApprovalCid <- exerciseByKey @AssetHoldingAccount 
+          (offeredAsset.asset.assetType, receiver) Preapprove_Transfer_In with
+            asset = offeredAsset.asset
+        -- Receiver prepares the asset requested by the proposer
+        requestedAsset <- fetch requestedAssetTxPreApprovalCid
+        assertMsg "Non fungible assets must be traded one at a time" $
+          requestedAsset.asset.assetType.fungible || L.length requestedAssetCids==1
+        (receiverSendingAssetHoldingAccountCid, _) <- fetchByKey @AssetHoldingAccount (requestedAsset.asset.assetType, receiver)
+        --totRequestedAssetAmount <- validateTxInputs requestedAssetCids receiverSendingAssetHoldingAccountCid requestedAsset.asset.amount
+        preparedRequestedAssetCids <- exerciseByKey @AssetHoldingAccount 
+          (requestedAsset.asset.assetType, receiver) Merge_Split with
+            assetCids = requestedAssetCids
+            outputAmounts = [requestedAsset.asset.amount]
+        -- Transfer offered asset from proposer to receiver
+        newReceiverAsset <- exercise offeredAssetTxPreApprovalCid 
+          TransferPreApproval_TransferAssetInSwap 
+            with assetInSwapCid = offeredAssetCid
+        -- Transfer requested asset from receiver to proposer
+        newProposerAsset <- exercise requestedAssetTxPreApprovalCid 
+          TransferPreApproval_TransferAsset 
+            with txAssetCid = last preparedRequestedAssetCids
+        return (newProposerAsset, newReceiverAsset)
+
+
+-- TransferPreApproal template gives the transfer originator the authority to change the asset owner
+-- from the transfer originator party to the transfer recipient party
+template TransferPreApproval
+  with
+    asset : Asset
+    newOwner : Party
+  where
+    signatory asset.assetType.issuer
+    observer newOwner, asset.owner
+
+    choice TransferPreApproval_Cancel : ()
+      controller newOwner
+      do
+        return ()
+
+    choice TransferPreApproval_Reject : ()
+      controller asset.owner
+      do
+        return ()
+
+    choice TransferPreApproval_TransferAsset : ContractId Asset
+      with
+        txAssetCid : ContractId Asset
+      controller asset.owner, newOwner
+      do
+        txAsset <- fetch txAssetCid
+        assertMsg "Transfer pre-approval asset and transfer asset do not match" $
+          asset == txAsset with observers = asset.observers
+        archive txAssetCid
+        create asset with
+          owner = newOwner
+          observers = Set.empty
+
+    choice TransferPreApproval_TransferAssetInSwap : ContractId Asset
+      with
+        assetInSwapCid : ContractId AssetInSwap
+      controller asset.owner, newOwner
+      do
+        assetInSwap <- fetch assetInSwapCid
+        assertMsg "Transfer pre-approval asset and transfer asset do not match" $
+          asset == assetInSwap.asset with observers = asset.observers
+        archive assetInSwapCid
+        create asset with
+          owner = newOwner
+          observers = Set.empty
+
+-- The AssetInSwap template represents an asset reserved for a swap.
+-- When a trade proposal is created, the asset contract, which is the source of funds for the swap, 
+-- is archived, so it cannot be used to create other swaps.
+-- AssetInSwap contract cannot be created by asset owner using "create" command because this requires the
+-- authority of the issuer. AssetInSwap can only be created by exercising Create_Trade choice on
+-- AssetHoldingAccount template, which provides the authority of both asset issuer and asset owner.
+-- The template provides trade proposer with a choice to cancel the swap.
+-- It also provides the receiver with a choice to accept or reject the trade.
+template AssetInSwap
+  with
+    -- The asset to be swapped.
+    asset : Asset
+    -- The receiver of the swap proposal.
+    receiver : Party
+  where
+    signatory (signatory asset)
+    observer receiver
+    ensure (if asset.assetType.fungible then asset.amount>0.0 else (asset.amount==1.0))
+
+    choice Cancel_Swap : ContractId Asset
+      controller asset.owner 
+      do
+        create asset
+
+    choice Reject_Swap : ContractId Asset
+      controller receiver
+      do
+        create asset
+        
+
+-- When the user logs in for the 1st time an AssetHoldingAccountProposal for Example Token (ET) is automatically 
+-- created for the user. This invite can be seen under Pending Activities. 
+-- When the user accepts the invite, user's AssetHoldingAccount for ET is created, which allows 
+-- the user to request an airdrop of ET token into the account. 
+-- The airdrop request is automatically granted by the issuer party of ET.
+-- This functionality is distinct from the regular Propose/Accept workflow for creating AssetHoldingAccount and for airdrop.
+-- The automation of creating AssetHoldingAccountProposal and the acceptance of airdrop request for ET is implemented
+-- using Triggers and two templates (AssetHoldingAccountRequest and AirdropRequest) designed for this specific purpose.
+template AssetHoldingAccountRequest with
+    recipient: Party
+    owner: Party
+  where 
+    signatory recipient
+    observer owner
+    choice AssetHoldingAccountRequest_Accept: ContractId AssetHoldingAccountProposal
+      with assetHoldingAccountCid: ContractId AssetHoldingAccount
+      controller owner
+      do
+         exercise assetHoldingAccountCid Invite_New_Asset_Holder with 
+          recipient = recipient
+
+template AirdropRequest with
+    amount: Decimal
+    requester: Party
+    assetHoldingAccountIssuer: Party
+    assetHoldingAccountCid: ContractId AssetHoldingAccount
+  where
+    signatory requester
+    observer assetHoldingAccountIssuer
+    choice AirdropRequest_Accept: ContractId Asset    
+      controller assetHoldingAccountIssuer
+      do
+        exercise assetHoldingAccountCid Airdrop with
+          amount = amount
