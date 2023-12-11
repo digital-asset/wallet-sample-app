@@ -25,6 +25,8 @@ import { SharedSnackbarContext } from "../../context/SharedSnackbarContext";
 import { getAssetSum } from "../../utils/getAssetSum";
 import { numberWithCommas } from "../../utils/numberWithCommas";
 import InfoIcon from "@mui/icons-material/Info";
+import { useCustomAdminParty } from "../../hooks/useCustomAdminParty"; 
+
 interface SendFormProps {
   symbol: string;
   isAirdroppable: boolean;
@@ -57,8 +59,9 @@ export const useStyles = makeStyles((theme: Theme) => ({
 
 export const SendForm: React.FC<SendFormProps> = (props) => {
   const { reference, assetAccountCid, issuer, isFungible, symbol, owner } =
-    props;
-  const classes = useStyles();
+  props;
+  const admin = useCustomAdminParty(); 
+  const classes = useStyles();  
   const nav = useNavigate();
   const { openSnackbar } = React.useContext(SharedSnackbarContext);
   const { loading, contracts } = useGetMyOwnedAssetsByAssetType({
@@ -75,6 +78,13 @@ export const SendForm: React.FC<SendFormProps> = (props) => {
 
   const onCancel = () => {
     nav(-1);
+  };
+
+  const onAdminClick = () => {
+    if (!admin) {
+      return;
+    }
+    setRecipient(admin);
   };
 
   const [recipient, setRecipient] = React.useState("");
@@ -140,6 +150,29 @@ export const SendForm: React.FC<SendFormProps> = (props) => {
           variant="outlined"
           size="small"
           onChange={(e) => setRecipient(e.currentTarget.value)}
+          InputProps={{
+            endAdornment: (
+              <Button
+                onClick={onAdminClick}
+                fullWidth
+                sx={{
+                  maxWidth: "120px",
+                  margin: 0,
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                }}
+                variant="contained"
+                size="small"
+              >
+                <Typography
+                  sx={{ textTransform: "capitalize" }}
+                  variant="caption"
+                >
+                  Use Default Party
+                </Typography>
+              </Button>
+            ),
+          }}
         />
         <TextField
           disabled={isLoading || isSuccessful || !isFungible}
