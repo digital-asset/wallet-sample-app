@@ -1,3 +1,4 @@
+import Box from "@mui/material/Box";
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { Theme } from "@mui/material/styles";
@@ -129,7 +130,11 @@ export const AssetProfilePage: React.FC = () => {
   const admin = useCustomAdminParty();
 
   if (loading) {
-    return <LinearProgress />;
+    return (
+      <Box sx={{ width: "100%" }}>
+        <LinearProgress />
+      </Box>
+    );
   }
 
   return (
