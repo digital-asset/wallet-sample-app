@@ -6,15 +6,15 @@ import DA.Optional (whenSome)
 import Account 
 import Asset
 
--- Auto accepts incoming swap requests
--- Configed on Daml hub for only the userAdmin party
+-- Auto accepts incoming transfer and swap requests
+-- Configed on Daml hub for only the UserAdmin party
 
 acceptSwapTrigger: T.Trigger ()
 acceptSwapTrigger = T.Trigger 
   { 
     initialize = pure (),
     updateState = \_  -> pure (),
-    registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @Asset, T.registeredTemplate @Trade, T.registeredTemplate @AssetHoldingAccount, T.registeredTemplate @TransferPreApproval, T.registeredTemplate @AssetInSwap],
+    registeredTemplates = T.RegisteredTemplates [T.registeredTemplate @Asset, T.registeredTemplate @Trade, T.registeredTemplate @AssetHoldingAccount, T.registeredTemplate @TransferPreApproval, T.registeredTemplate @AssetInSwap, T.registeredTemplate @AssetTransfer],
     rule = \p -> do
       debug ("ACCEPT SWAP TRIGGER FIRED")
 
@@ -26,7 +26,6 @@ acceptSwapTrigger = T.Trigger
 
       debug ("Incoming swap requests", myTrades)
       
-      --unless ( DA.Foldable.null myTrades ) do 
       case myTrades of 
         [] -> pure ()
 
@@ -49,16 +48,26 @@ acceptSwapTrigger = T.Trigger
                           requestedAssetTxPreApproval.asset.amount)
                       then  
                         do 
-                          requestedAssetHoldingAccountCid <- T.queryContractKey @AssetHoldingAccount(requestedAssetTxPreApproval.asset.assetType, p)
-                          whenSome requestedAssetHoldingAccountCid
-                            \(cid, c) -> do
+                          optRequestedAssetHoldingAccount <- T.queryContractKey @AssetHoldingAccount (requestedAssetTxPreApproval.asset.assetType, p)
+                          whenSome optRequestedAssetHoldingAccount
+                            \(accCid, _) -> do
                               debug("Issuing assets for swap")
-                              T.dedupExercise cid Airdrop with 
+                              T.dedupExercise accCid Airdrop with 
                                 amount = requestedAssetTxPreApproval.asset.amount
                       else                 
-                          T.dedupExercise tradeCid Trade_Settle with 
-                            requestedAssetCids = map fst requestedAssets 
-                          
+                        T.dedupExercise tradeCid Trade_Settle with 
+                          requestedAssetCids = map fst requestedAssets 
+
+      transferRequests <- T.queryFilter @AssetTransfer (\transfer -> transfer.recipient == p)
+
+      debug ("Incoming transfers", transferRequests)
+      case transferRequests of 
+        [] -> pure ()
+
+        (transferCid, c) :: _ -> do
+          transferAssetAccount <- T.queryContractKey @AssetHoldingAccount (c.asset.assetType, p)            
+          whenSome transferAssetAccount
+            \(accCid, _) ->  T.dedupExercise accCid Deposit_Transfer_Into_Account with transferCid
     ,
     heartbeat = None
   }
