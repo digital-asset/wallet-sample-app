@@ -165,7 +165,7 @@ daml trigger --dar triggers/triggers.dar \
              --ledger-user "admin"
 ```
 
-3. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresponds to the party that is the issuer of the Example Token, to automatically accept invites to create an Asset Holding Account for user's asset. This invite is created as part of a swap workflow when a user swaps his or her asset for an amount of Example Tokens with 'admin'.
+3. From the root, in a separate terminal instance, run the below trigger. This trigger allows 'admin' user, which corresponds to the 'Default Party' that is the issuer of the Example Token, to automatically accept invites to create an Asset Holding Account for user's asset. This invite is created as part of a swap workflow when a user swaps his or her asset for an amount of Example Token with 'admin'.
 ```
 daml trigger --dar triggers/triggers.dar \
              --trigger-name AcceptAssetInviteTrigger:acceptAssetInviteTrigger \
@@ -174,7 +174,7 @@ daml trigger --dar triggers/triggers.dar \
              --ledger-user "admin"
 ```
 
-4. This trigger allows 'admin' user, which corresponds to the party that is the issuer of the Example Token, to automatically accept a swap proposal created by a user, where the user proposes to swap his or her asset for an amount of Example Tokens with 'admin'.
+4. This trigger allows 'admin' user, which corresponds to the 'Default Party' that is the issuer of the Example Token, to automatically accept asset transfers and swap proposals created by a user.
 ```
 daml trigger --dar triggers/triggers.dar \
              --trigger-name AcceptSwapTrigger:acceptSwapTrigger \
@@ -190,7 +190,7 @@ All the actions in the start.sh shell script are run as background jobs, as they
 Once the above steps are executed, the backend of the app is fully functional. To start the frontend follow the instructions [here](#start-the-frontend).
 
 # Trigger Uses
-[Daml triggers](https://docs.daml.com/triggers/index.html) provide automation for certain interactions with the ledger. This project implements 4 triggers, which we need to start. These triggers implement a bot, which provides a party for a human user to swap assets with. When you login as a user to the app frontend for the first time, you automatically receive an invite to create an asset holding account for Example Token (ET). Once you accept the invite, you can request new quantities of the Example Token to be airdropped into your asset holding account. This request is automatically granted. Finally, after creating an asset holding account for a new asset type and after issuing a quantity of this asset into your own account, you can swap this asset for an amount of Example Token. All this functionality demonstrates the workflows implemented in the app without requiring another human user to interact (e.g. trade assets) with.  
+[Daml triggers](https://docs.daml.com/triggers/index.html) provide automation for certain interactions with the ledger. This project implements 4 triggers, which we need to start. These triggers implement a bot, which provides a party for a human user to swap assets with. When you login as a user to the app frontend for the first time, you automatically receive an invite to create an asset holding account for Example Token (ET). Once you accept the invite, you can request new quantities of the Example Token to be airdropped into your asset holding account. This request is automatically granted. After creating an asset holding account for a new asset type and after issuing a quantity of this asset into your own account, you can invite the 'Default Party' to open an account for this asset. A trigger automatically accepts invites sent to the 'Default Party'. Then you can transfer some quantity of the asset to the 'Default Party' or swap this asset for an amount of Example Token. A trigger automatically accepts transfers and swap proposals sent by a user to the 'Default Party'. All this functionality demonstrates the workflows implemented in the app without requiring another human user to interact with (e.g. trade assets).  
 
 
 # Deploying the project to Daml Hub
