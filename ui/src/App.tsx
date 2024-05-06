@@ -18,6 +18,18 @@ import { theme } from "./Theme";
 import { createLedgerContext } from "@daml/react";
 import { MainScreen } from "./components/MainScreen/MainScreen";
 
+// Needed for appcues
+// https://docs.appcues.com/en_US/366344-installation-developers
+declare global {
+  interface Window {
+      Appcues: any;
+  }
+}
+declare global {
+  interface Window {
+      AppcuesSettings: any;
+  }
+}
 // Context for the party of the user.
 export const userContext = createLedgerContext();
 // Context for the public party used to query user aliases.
