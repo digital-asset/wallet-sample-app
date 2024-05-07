@@ -66,6 +66,10 @@ export const LoginPage: React.FC<Props> = ({ onLogin }) => {
   const login = useCallback(
     async (credentials: Credentials) => {
       onLogin(credentials);
+      window.Appcues?.identify(credentials.party, {
+        user: credentials.user,
+        party: credentials.party,
+    });
     },
     [onLogin]
   );
