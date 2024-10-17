@@ -10,8 +10,6 @@ The Wallet Sample App is an open-source digital asset wallet powered by [Daml](h
 
 You can watch the video walkthrough of the application [here](https://www.youtube.com/watch?v=Y4TMNedgG3Q)
 
-You can play around with user functionality in the Wallet Daml Sample App without deploying the app, as it is continuously running at [https://wallet.daml.app](https://wallet.daml.app). To sign in to the app running at [https://wallet.daml.app](https://wallet.daml.app), use your Daml Hub account. You can create a free [Daml Hub](https://www.digitalasset.com/products/daml-hub) account, if you don't already have one.
-
 User workflows implemented in Wallet Daml Sample App include the following features 
 - Creating an asset holding account
 - Issuing assets (creating new quantities of an asset in an issuer party account)
@@ -190,62 +188,4 @@ All the actions in the start.sh shell script are run as background jobs, as they
 Once the above steps are executed, the backend of the app is fully functional. To start the frontend follow the instructions [here](#start-the-frontend).
 
 # Trigger Uses
-[Daml triggers](https://docs.daml.com/triggers/index.html) provide automation for certain interactions with the ledger. This project implements 4 triggers, which we need to start. These triggers implement a bot, which provides a party for a human user to swap assets with. When you login as a user to the app frontend for the first time, you automatically receive an invite to create an asset holding account for Example Token (ET). Once you accept the invite, you can request new quantities of the Example Token to be airdropped into your asset holding account. This request is automatically granted. After creating an asset holding account for a new asset type and after issuing a quantity of this asset into your own account, you can invite the 'Default Party' to open an account for this asset. A trigger automatically accepts invites sent to the 'Default Party'. Then you can transfer some quantity of the asset to the 'Default Party' or swap this asset for an amount of Example Token. A trigger automatically accepts transfers and swap proposals sent by a user to the 'Default Party'. All this functionality demonstrates the workflows implemented in the app without requiring another human user to interact with (e.g. trade assets).  
-
-
-# Deploying the project to Daml Hub
-The app is continuously run on Daml Hub by Digital Asset at [https://wallet.daml.app](https://wallet.daml.app). You can play with user functionality in the app run by Digital Asset. To sign in to the app UI at the above URL use your Daml Hub account. You can create a free Daml Hub account, if you don't already have one.
-You can also deploy your own version of the app on Daml Hub.
-First create a free [Daml Hub](https://www.digitalasset.com/products/daml-hub) account.  
-
-To learn how to deploy Daml apps to Daml Hub see [Daml Hub Quickstart](https://hub.daml.com/docs/quickstart/) 
-
-
-
-## Setup Project on Daml Hub
-Once logged in, click `Create Project` on the right hand side of the hub interface. 
-
-![image](damlHubScreenshots/DamlHubNewProjectButton.png)
-
-You will be asked to provide the project name and the ledger name. Click `Continue` to move to the next page.
-
-### Uploading Dar Files
-In this step you need to upload the dar files created in ["Build Required Files"](#build-required-files) step. These include:
-- account.dar
-- asset.dar
-- user.dar
-- triggers.dar
-
-For each of the above files click `Upload File` and navigate to the file location on the local machine.
-
-![image](damlHubScreenshots/UploadFileButton.png)
-
-### Upload UI Zip File
-In addition we need to create `wallet-refapp-ui.zip` file by running `npm run zip` command from the `ui` directory. This zip file contains the app UI and also needs to be uploaded to Daml Hub by clicking `Upload File` in the Daml Hub UI.
-
-Once all files that need to be uploaded to the ledger have been selected, click `Launch Ledger`. This will create the ledger with the name you specified and upload the files. Click on the ledger name under the project created. This will take you to the Deployments page with the actions that need to happen next listed under `Action Needed`. Note that at this point the files have been uploaded to the ledger, but not yet deployed on it. In other words the Daml models (dar files), Daml Triggers and the UI are ready for deployment, but are not yet running on the ledger. To make them run follow the prompts on the page as described below.
-
-
-### 1. Deploy instances of dar files and the UI zip file to the running ledger
-It may be that the top action suggested on the lage is to deploy the triggers. In this case scroll down the page until you see account.dar, asset.dar, user.dar and wallet-refapp-ui.zip files. Click `Deploy Instance` button for each of these files.
-
-### 2. Configure triggers for Daml Hub
-It may take a few minutes for the ledger to initialize. During this time you may see "Loading parties..." in the Party field under the action to deploy Daml Triggers in the triggers.dar. Once the ledger is started you can configure the triggers.
-- Under `Trigger Name`, select the first trigger
-![image](damlHubScreenshots/DamlHubTriggerName.png)
-- Under `Party`, select `UserAdmin`. If UserAdmin party is not listed in the drop-down you may need to refresh the page and select Daml Triggers under the Deployments.
-- Click `Deploy Instance`, and repeat for all other triggers.
-
-
-### Setup Admin Account on the Deployed App
-This step initializes the ledger with some data required for the Daml Triggers implemented in this app. Specifically the step sets up the asset holding account for ET (example token) asset, which is issued by the default party (aka UserAdmin party), and which is used to perform automatically accepted and settled swaps with the default party. See [Trigger Uses](#trigger-uses) setion for more details.
-Before the triggers can run properly, you will need to 
-1. Click the Identities tab and copy JWT for the UserAdmin party
- ![image](damlHubScreenshots/DamlHubUserAdmin.png)
-2. Launch the app in the new tab by clicking the Subdomain link in the bottom left corner of the above page. This will open the app login page in a new tab. Click `Login with Token` button. Login to the app using the JWT of the UserAdmin party
-3. On the left hand side menu, click `Create`. You will arrive at the asset holding account creation page
-4. In the `symbol` field, name the asset `ET`, then click `Create` at the bottom to create the `ET` asset holding account. 
-Once this account is created, other users will be able to receive the automatic ET account asset invitations sent by the triggers, and users will also be able to request airdrops and swap with the UserAdmin.
-
-Now the app is fully set up. You can log out from the app and login by clicking `Log into Wallet` button in the login page and using your Daml Hub account credentials to sign in. The first time you log into the app as a user you should see an invite to create your asset holding account for ET. Accept the invite and follow the instructions on the right hand side of the app UI to issue your own assets and explore other workflows in the app.
-
+[Daml triggers](https://docs.daml.com/triggers/index.html) provide automation for certain interactions with the ledger. This project implements 4 triggers, which we need to start. These triggers implement a bot, which provides a party for a human user to swap assets with. When you login as a user to the app frontend for the first time, you automatically receive an invite to create an asset holding account for Example Token (ET). Once you accept the invite, you can request new quantities of the Example Token to be airdropped into your asset holding account. This request is automatically granted. After creating an asset holding account for a new asset type and after issuing a quantity of this asset into your own account, you can invite the 'Default Party' to open an account for this asset. A trigger automatically accepts invites sent to the 'Default Party'. Then you can transfer some quantity of the asset to the 'Default Party' or swap this asset for an amount of Example Token. A trigger automatically accepts transfers and swap proposals sent by a user to the 'Default Party'. All this functionality demonstrates the workflows implemented in the app without requiring another human user to interact with (e.g. trade assets).
